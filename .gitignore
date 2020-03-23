@@ -1,0 +1,25 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.exe
+*.o
+*.os
+*.obj
+*.exp
+*.pdb
+*.lib
+
+# Krita backup files #
+######################
+*.kra~
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
