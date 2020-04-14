@@ -8,16 +8,22 @@
 #pragma once
 
 // This header file contains the bare minimum of includes needed by every translation unit that uses the KRA library.
-#include "KraNameSpace.h"
+#include "KraNamespace.h"
 #include <stddef.h>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <algorithm>
+#include <iostream>
+#include <sstream> 
+
+#define WRITEBUFFERSIZE (8192)
 
 // Enum to define the layer type of the Kra layer.
 typedef enum
 {
+    OTHER,
     PAINT_LAYER,
     VECTOR_LAYER,
-    OTHER
+    GROUP_LAYER
 } kraLayerType;

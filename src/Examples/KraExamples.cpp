@@ -41,7 +41,7 @@ int ExampleReadKra(void)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
+int main(int argc, const char * argv[])
 {
 	{
 		const int result = ExampleReadKra();
