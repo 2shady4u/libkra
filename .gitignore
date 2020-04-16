@@ -23,3 +23,21 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Etc
+.sconsign.dblite
+
+# VS
+vsproj/.vs/
+vsproj/Debug/
+vsproj/Release/
+vsproj/x64/
+vsproj/x86/
+vsproj/gdsqlite.vcxproj.*
+
+.vscode
+
+# CodeLite
+.codelite
+src.project
+src.workspace
