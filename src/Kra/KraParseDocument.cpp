@@ -326,15 +326,14 @@ std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> laye
 		std::vector<unsigned char> dataVector(layerContent.begin() + currentIndex, layerContent.begin() + currentIndex + tile->compressedLength);
 		const uint8_t *dataVectorPointer = dataVector.data();
 		/* Allocate memory for the output */
-
-		uint8_t *output = (uint8_t *)malloc(tile->decompressedLength);
+		std::unique_ptr<uint8_t[]> output = std::make_unique<uint8_t[]>(tile->decompressedLength);
 
 		/* Now... the first byte of this dataVector is actually an indicator of compression */
 		/* As follows: */
 		/* 0 -> No compression, the data is actually raw! */
 		/* 1 -> The data was compressed using LZF */
 		/* TODO: Actually implement a check to see this byte!!! */
-		lzff_decompress(dataVectorPointer + 1, tile->compressedLength, output, tile->decompressedLength);
+		lzff_decompress(dataVectorPointer + 1, tile->compressedLength, output.get(), tile->decompressedLength);
 
 		/* TODO: Krita might also normalize the colors in some way */
 		/* This needs to be check and if present, the colors need to be denormalized */

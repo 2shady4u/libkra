@@ -115,6 +115,9 @@ int ExampleReadKra(void)
 	const std::wstring rawFile = L"..\\..\\bin\\KRAExample.kra";
 
 	std::unique_ptr<KraDocument> document = CreateKraDocument(rawFile);
+	if (document == NULL) {
+		return 1;
+	}
 
 	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = CreateKraExportLayers(document);
 
