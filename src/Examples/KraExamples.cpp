@@ -18,9 +18,9 @@ int ExampleReadKra(void)
 {
 	const std::wstring rawFile = L"..\\..\\bin\\KRAExample.kra";
 
-	KraDocument* document = CreateKraDocument(rawFile);
+	std::unique_ptr<KraDocument> document = CreateKraDocument(rawFile);
 
-	std::vector<KraExportedLayer*> exportedLayers = CreateKraExportLayers(document);
+	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = CreateKraExportLayers(document);
 
 	for (auto const& layer : exportedLayers)
 	{
