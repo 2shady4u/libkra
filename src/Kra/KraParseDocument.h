@@ -19,7 +19,6 @@
 KRA_NAMESPACE_BEGIN
 
 std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring& filename);
-void DestroyKraDocument(std::unique_ptr<KraDocument> &document);
 
 unsigned int ParseUIntAttribute(const tinyxml2::XMLElement* xmlElement, const char* attributeName);
 const char* ParseCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);

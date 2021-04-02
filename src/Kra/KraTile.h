@@ -38,9 +38,10 @@ struct KraTile
     int decompressedLength;
 
     // Decompressed image data of this tile.
-    uint8_t* data;
+    std::unique_ptr<uint8_t[]> data;
 
     // Flag that gets raised when something goes wrong when parsing the data.
+    // CURRENTLY UNUSED!
     bool corruptionFlag = false;
 };
 

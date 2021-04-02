@@ -89,11 +89,11 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
             printf("(Exporting Document)  	>> composedDataSize = %i\n", static_cast<int>(composedDataSize));
 
             /* Allocate space for the output data! */
-            uint8_t *composedData = (uint8_t *)malloc(composedDataSize);
+
+            std::unique_ptr<uint8_t[]> composedData = std::make_unique<uint8_t[]>(composedDataSize);
             /* I initialize all these elements to zero to avoid empty tiles from being filled with junk */
             /* Problem might be that this takes quite a lot of time... */
             /* TODO: Only the empty tiles should be initialized to zero! */
-            std::memset(composedData, 0, composedDataSize);
 
             /* IMPORTANT: Not all the tiles exist! */
             /* Empty tiles (containing full ALPHA) are not added as tiles! */
@@ -104,33 +104,22 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
                 int currentNormalizedLeft = tile->left - exportedLayer->left;
                 for (int rowIndex = 0; rowIndex < (int)tile->tileHeight; rowIndex++)
                 {
-                    uint8_t *destination = composedData + tile->pixelSize * tile->tileWidth * rowIndex * numberOfColumns;
+                    uint8_t *destination = composedData.get() + tile->pixelSize * tile->tileWidth * rowIndex * numberOfColumns;
                     destination += tile->pixelSize * currentNormalizedLeft;
                     destination += tile->pixelSize * tile->tileWidth * currentNormalizedTop * numberOfColumns;
-                    uint8_t *source = tile->data + tile->pixelSize * tile->tileWidth * rowIndex;
+                    uint8_t *source = tile->data.get() + tile->pixelSize * tile->tileWidth * rowIndex;
                     size_t size = tile->pixelSize * tile->tileWidth;
                     /* Copy the row of the tile to the composed image */
                     std::memcpy(destination, source, size);
                 }
             }
-            exportedLayer->data = composedData;
+            exportedLayer->data = std::move(composedData);
             exportedLayers.push_back(std::move(exportedLayer));
         }
     }
     /* Reverse the direction of the vector, so that order is preserved in the Godot mirror universe */
     std::reverse(exportedLayers.begin(), exportedLayers.end());
     return exportedLayers;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Clean up memory allocation from the heap.
-// ---------------------------------------------------------------------------------------------------------------------
-void DestroyKraExportLayers(std::vector<std::unique_ptr<KraExportedLayer>> &exportedLayers)
-{
-    for( auto const& layer : exportedLayers )
-    {
-        free(layer->data);
-    }
 }
 
 KRA_NAMESPACE_END

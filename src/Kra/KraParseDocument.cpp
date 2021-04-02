@@ -107,20 +107,6 @@ std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Cleans up all allocated memory on the heap.
-// ---------------------------------------------------------------------------------------------------------------------
-void DestroyKraDocument(std::unique_ptr<KraDocument> &document)
-{
-	for( auto const& layer : document->layers )
-	{
-		for( auto const& tile : layer->tiles )
-		{
-			free(tile->data);
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 // Parses a XMLElement and extracts the UNSIGNED INT attribute value found at the attribute name.
 // ---------------------------------------------------------------------------------------------------------------------
 unsigned int ParseUIntAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
@@ -340,6 +326,7 @@ std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> laye
 		std::vector<unsigned char> dataVector(layerContent.begin() + currentIndex, layerContent.begin() + currentIndex + tile->compressedLength);
 		const uint8_t *dataVectorPointer = dataVector.data();
 		/* Allocate memory for the output */
+
 		uint8_t *output = (uint8_t *)malloc(tile->decompressedLength);
 
 		/* Now... the first byte of this dataVector is actually an indicator of compression */
@@ -361,7 +348,7 @@ std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> laye
 		/* R1, G1, B1, A1, R2, G2, ... etc */
 		/* We'll just sort this here!*/
 		/* TODO: Sometimes there won't be any alpha channel when it is RGB instead of RGBA. */
-		uint8_t *sortedOutput = (uint8_t *)malloc(tile->decompressedLength);
+		std::unique_ptr<uint8_t[]> sortedOutput = std::make_unique<uint8_t[]>(tile->decompressedLength);
 		int jj = 0;
 		int tileArea = tile->tileHeight * tile->tileWidth;
 		for (int i = 0; i < tileArea; i++)
@@ -372,7 +359,7 @@ std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> laye
 			sortedOutput[jj + 3] = output[3 * tileArea + i]; //ALPHA CHANNEL
 			jj = jj + 4;
 		}
-		tile->data = sortedOutput;
+		tile->data = std::move(sortedOutput);
 		/* Q: Why are the RED and BLUE channels swapped? */
 		/* A: I have no clue... that's how it is saved in the tile! */
 
@@ -385,7 +372,7 @@ std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> laye
 		for (int i = 0; i < 256; i++)
 		{
 			j++;
-			printf("%i ", sortedOutput[i]);
+			printf("%i ", tile->data.get()[i]);
 			if (j == 64)
 			{
 				j = 0;

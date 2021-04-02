@@ -27,14 +27,10 @@ int ExampleReadKra(void)
 		const wchar_t* layerName = layer->name;
 		unsigned int layerHeight = (unsigned int)(layer->bottom - layer->top);
 		unsigned int layerWidth = (unsigned int)(layer->right - layer->left);
-		const uint8_t *data = layer->data;
+		//std::unique_ptr<uint8_t[]> data = std::move(layer->data);
         /* Export the layer's data to a texture */
 		/* TODO: Add the actual exporting functionality here! */
 	}
-
-	/* Clean up the memory allocation of our structs */
-	DestroyKraExportLayers(exportedLayers);
-	DestroyKraDocument(document);
 
 	return 0;
 }
