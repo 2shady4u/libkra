@@ -110,12 +110,11 @@ finalise:
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-int ExampleReadKra(void)
+int ExampleReadKra(std::wstring rawFile)
 {
-	const std::wstring rawFile = L"..\\..\\bin\\KRAExample.kra";
-
 	std::unique_ptr<KraDocument> document = CreateKraDocument(rawFile);
-	if (document == NULL) {
+	if (document == NULL)
+	{
 		return 1;
 	}
 
@@ -138,12 +137,51 @@ int ExampleReadKra(void)
 	return 0;
 }
 
+static void show_usage(std::string name)
+{
+	std::cerr << "Usage: " << name << " [options]\n"
+			  << "\n" 
+			  << "General options:\n"
+			  << "  -h, --help                       Display this help message.\n"
+			  << "  -d,--source <source>             Specify the KRA source file.\n";
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 int main(int argc, const char *argv[])
 {
+	std::vector<std::string> sources;
+	std::wstring rawFile = L"..\\..\\bin\\KRAExample.kra";
+	for (int i = 1; i < argc; ++i)
 	{
-		const int result = ExampleReadKra();
+		std::string arg = argv[i];
+		if ((arg == "-h") || (arg == "--help"))
+		{
+			show_usage(argv[0]);
+			return 0;
+		}
+		else if ((arg == "-s") || (arg == "--source"))
+		{
+			// Make sure we aren't at the end of argv!
+			if (i + 1 < argc)
+			{
+				std::string str = argv[i + 1]; // Increment 'i' so we don't get the argument as the next argv[i].
+				rawFile = std::wstring(str.begin(), str.end());
+			}
+			else
+			{ // Uh-oh, there was no argument to the source option.
+				std::cerr << "--source option requires one argument." << std::endl;
+				return 1;
+			}
+		}
+		else
+		{
+			sources.push_back(argv[i]);
+		}
+	}
+
+	{
+		const int result = ExampleReadKra(rawFile);
 		if (result != 0)
 		{
 			return result;
