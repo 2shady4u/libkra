@@ -422,7 +422,7 @@ unsigned int ParseHeaderElement(std::vector<unsigned char> layerContent, const s
 std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned int &currentIndex)
 {
 	unsigned int startIndex = currentIndex;
-	/* Just go through the vector until you encounter "0x0A" */
+	/* Just go through the vector until you encounter "0x0A" (= the hex value of Line Feed) */
 	while (layerContent.at(currentIndex) != (char)0x0A)
 	{
 		currentIndex++;
@@ -444,7 +444,7 @@ std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned i
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Extra the data content of the current file in the ZIP archive to a vector.
+// Extract the data content of the current file in the ZIP archive to a vector.
 // ---------------------------------------------------------------------------------------------------------------------
 
 int extractCurrentFileToVector(std::vector<unsigned char>& resultVector, unzFile& m_zf)
