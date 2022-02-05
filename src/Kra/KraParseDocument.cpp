@@ -12,7 +12,7 @@ KRA_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 // Create a KRA Document which contains document properties and a vector of KraLayer-pointers.
 // ---------------------------------------------------------------------------------------------------------------------
-KraDocument *CreateKraDocument(const std::wstring &filename)
+std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 {
 
 	/* Convert wstring to string */
@@ -47,7 +47,7 @@ KraDocument *CreateKraDocument(const std::wstring &filename)
 	xmlDocument.Parse(xmlString.c_str());
 	tinyxml2::XMLElement *xmlElement = xmlDocument.FirstChildElement("DOC")->FirstChildElement("IMAGE");
 
-    KraDocument *document = new KraDocument;
+    std::unique_ptr<KraDocument> document = std::make_unique<KraDocument>();
 	/* Get important document attributes from the XML-file */
 	document->width = ParseUIntAttribute(xmlElement, "width");
 	document->height = ParseUIntAttribute(xmlElement, "height");
@@ -104,27 +104,6 @@ KraDocument *CreateKraDocument(const std::wstring &filename)
 
 	return document;
 
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Cleans up all allocated memory on the heap.
-// ---------------------------------------------------------------------------------------------------------------------
-void DestroyKraDocument(KraDocument *&document)
-{
-	while (document->layers.size() > 0)
-	{
-		KraLayer *layer = document->layers.back();
-		while (layer->tiles.size() > 0)
-		{
-			KraTile *tile = layer->tiles.back();
-			layer->tiles.pop_back();
-			free(tile->data);
-			delete tile;
-		}
-		document->layers.pop_back();
-		delete layer;
-	}
-	delete document;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -192,9 +171,9 @@ const wchar_t *ParseWCharAttribute(const tinyxml2::XMLElement *xmlElement, const
 // ---------------------------------------------------------------------------------------------------------------------
 // Go through the XML-file and extract all the layer properties.
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<KraLayer *> ParseLayers(tinyxml2::XMLElement *xmlElement)
+std::vector<std::unique_ptr<KraLayer>> ParseLayers(tinyxml2::XMLElement *xmlElement)
 {
-	std::vector<KraLayer *> layers;
+	std::vector<std::unique_ptr<KraLayer>> layers;
 	const tinyxml2::XMLElement *layersElement = xmlElement->FirstChildElement("layers");
 	const tinyxml2::XMLElement *layerNode = layersElement->FirstChild()->ToElement();
 
@@ -202,7 +181,7 @@ std::vector<KraLayer *> ParseLayers(tinyxml2::XMLElement *xmlElement)
 	/* Keep trying to find a layer until we can't any new ones! */
 	while (layerNode != 0)
 	{
-		KraLayer *layer = new KraLayer;
+		std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
 		/* Get important layer attributes from the XML-file */
 		layer->x = ParseUIntAttribute(layerNode, "x");
 		layer->y = ParseUIntAttribute(layerNode, "y");
@@ -261,7 +240,7 @@ std::vector<KraLayer *> ParseLayers(tinyxml2::XMLElement *xmlElement)
 		printf("(Parsing Document)  	>> x = %i\n", layer->x);
 		printf("(Parsing Document)  	>> y = %i\n", layer->y);
 
-		layers.push_back(layer);
+		layers.push_back(std::move(layer));
 
 		/* Try to get the next layer entry... if not available break */
 		const tinyxml2::XMLNode *nextSibling = layerNode->NextSibling();
@@ -281,10 +260,10 @@ std::vector<KraLayer *> ParseLayers(tinyxml2::XMLElement *xmlElement)
 // ---------------------------------------------------------------------------------------------------------------------
 // Extract the tile data and properties from the raw binary data.
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<KraTile *> ParseTiles(std::vector<unsigned char> layerContent)
+std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> layerContent)
 {
 
-	std::vector<KraTile *> tiles;
+	std::vector<std::unique_ptr<KraTile>> tiles;
 
 	/* This code works with a global pointer index that gets incremented depending on element size */
 	/* currentIndex obviously starts at zero and will be passed by reference */
@@ -308,7 +287,7 @@ std::vector<KraTile *> ParseTiles(std::vector<unsigned char> layerContent)
 
 	for (unsigned int i = 0; i < numberOfTiles; i++)
 	{
-		KraTile *tile = new KraTile;
+		std::unique_ptr<KraTile> tile = std::make_unique<KraTile>();
 		tile->version = version;
 		tile->tileWidth = tileWidth;
 		tile->tileHeight = tileHeight;
@@ -347,14 +326,14 @@ std::vector<KraTile *> ParseTiles(std::vector<unsigned char> layerContent)
 		std::vector<unsigned char> dataVector(layerContent.begin() + currentIndex, layerContent.begin() + currentIndex + tile->compressedLength);
 		const uint8_t *dataVectorPointer = dataVector.data();
 		/* Allocate memory for the output */
-		uint8_t *output = (uint8_t *)malloc(tile->decompressedLength);
+		std::unique_ptr<uint8_t[]> output = std::make_unique<uint8_t[]>(tile->decompressedLength);
 
 		/* Now... the first byte of this dataVector is actually an indicator of compression */
 		/* As follows: */
 		/* 0 -> No compression, the data is actually raw! */
 		/* 1 -> The data was compressed using LZF */
 		/* TODO: Actually implement a check to see this byte!!! */
-		lzff_decompress(dataVectorPointer + 1, tile->compressedLength, output, tile->decompressedLength);
+		lzff_decompress(dataVectorPointer + 1, tile->compressedLength, output.get(), tile->decompressedLength);
 
 		/* TODO: Krita might also normalize the colors in some way */
 		/* This needs to be check and if present, the colors need to be denormalized */
@@ -368,7 +347,7 @@ std::vector<KraTile *> ParseTiles(std::vector<unsigned char> layerContent)
 		/* R1, G1, B1, A1, R2, G2, ... etc */
 		/* We'll just sort this here!*/
 		/* TODO: Sometimes there won't be any alpha channel when it is RGB instead of RGBA. */
-		uint8_t *sortedOutput = (uint8_t *)malloc(tile->decompressedLength);
+		std::unique_ptr<uint8_t[]> sortedOutput = std::make_unique<uint8_t[]>(tile->decompressedLength);
 		int jj = 0;
 		int tileArea = tile->tileHeight * tile->tileWidth;
 		for (int i = 0; i < tileArea; i++)
@@ -379,7 +358,7 @@ std::vector<KraTile *> ParseTiles(std::vector<unsigned char> layerContent)
 			sortedOutput[jj + 3] = output[3 * tileArea + i]; //ALPHA CHANNEL
 			jj = jj + 4;
 		}
-		tile->data = sortedOutput;
+		tile->data = std::move(sortedOutput);
 		/* Q: Why are the RED and BLUE channels swapped? */
 		/* A: I have no clue... that's how it is saved in the tile! */
 
@@ -392,7 +371,7 @@ std::vector<KraTile *> ParseTiles(std::vector<unsigned char> layerContent)
 		for (int i = 0; i < 256; i++)
 		{
 			j++;
-			printf("%i ", sortedOutput[i]);
+			printf("%i ", tile->data.get()[i]);
 			if (j == 64)
 			{
 				j = 0;
@@ -401,10 +380,11 @@ std::vector<KraTile *> ParseTiles(std::vector<unsigned char> layerContent)
 		}
 		printf("(Parsing Document)  	>> DATA END\n");
 
-		tiles.push_back(tile);
-
 		/* Add the compressedLength to the currentIndex so the next tile starts at the correct position */
+		// Needs to be done BEFORE moving the pointer's ownership to the vector!
 		currentIndex += tile->compressedLength;
+
+		tiles.push_back(std::move(tile));
 	}
 
 	return tiles;
@@ -442,7 +422,7 @@ unsigned int ParseHeaderElement(std::vector<unsigned char> layerContent, const s
 std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned int &currentIndex)
 {
 	unsigned int startIndex = currentIndex;
-	/* Just go through the vector until you encounter "0x0A" */
+	/* Just go through the vector until you encounter "0x0A" (= the hex value of Line Feed) */
 	while (layerContent.at(currentIndex) != (char)0x0A)
 	{
 		currentIndex++;
@@ -464,7 +444,7 @@ std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned i
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Extra the data content of the current file in the ZIP archive to a vector.
+// Extract the data content of the current file in the ZIP archive to a vector.
 // ---------------------------------------------------------------------------------------------------------------------
 
 int extractCurrentFileToVector(std::vector<unsigned char>& resultVector, unzFile& m_zf)

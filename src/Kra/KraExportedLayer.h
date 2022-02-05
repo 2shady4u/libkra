@@ -30,7 +30,7 @@ struct KraExportedLayer
 
     bool isVisible;
 
-    uint8_t* data;
+    std::unique_ptr<uint8_t[]> data;
 };
 
 KRA_NAMESPACE_END
