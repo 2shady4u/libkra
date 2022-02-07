@@ -29,8 +29,7 @@ bool writeImage(const wchar_t *filename, unsigned int width, unsigned int height
 	unsigned int channelCount = 4;
 	int colorType = PNG_COLOR_TYPE_RGBA;
 
-	std::wstring ws(filename);
-	std::string str(ws.begin(), ws.end());
+	std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(filename);
 	const char *cFilename = str.c_str();
 
 	// Open file for writing (binary mode)

@@ -16,7 +16,7 @@ std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 {
 
 	/* Convert wstring to string */
-	std::string sFilename(filename.begin(), filename.end());
+	std::string sFilename = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(filename);
 	const char *path = sFilename.c_str();
 
 	/* Open the KRA archive using minizip */
@@ -225,8 +225,7 @@ std::vector<std::unique_ptr<KraLayer>> ParseLayers(tinyxml2::XMLElement *xmlElem
 			layer->type = kraLayerType::OTHER;
 		}
 
-		std::wstring ws(layer->name);
-		std::string str(ws.begin(), ws.end());
+		std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(layer->name);
 		const char *cname = str.c_str();
 
 		printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", cname);

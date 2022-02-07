@@ -21,8 +21,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
     {
         if (layer->type != kraLayerType::PAINT_LAYER)
         {
-            std::wstring ws(layer->name);
-            std::string str(ws.begin(), ws.end());
+            std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(layer->name);
             const char *cname = str.c_str();
             printf("(Exporting Document) Ignoring non-exportable Layer '%s'\n", cname);
         }
@@ -78,8 +77,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
             unsigned int numberOfRows = layerHeight / referenceTile->tileHeight;
             size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressedLength;
 
-            std::wstring ws(exportedLayer->name);
-            std::string str(ws.begin(), ws.end());
+            std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exportedLayer->name);
             const char *cname = str.c_str();
 
             printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", cname);

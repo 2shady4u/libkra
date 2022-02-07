@@ -13,6 +13,8 @@
 #include "KraTile.h"
 #include "KraExportedLayer.h"
 
+#include <codecvt>
+
 KRA_NAMESPACE_BEGIN
 
 std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique_ptr<KraDocument> &document);
