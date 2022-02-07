@@ -142,7 +142,7 @@ static void show_usage(std::string name)
 			  << "\n"
 			  << "General options:\n"
 			  << "  -h, --help                       Display this help message.\n"
-			  << "  -d,--source <source>             Specify the KRA source file.\n";
+			  << "  -s,--source <source>             Specify the KRA source file.\n";
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
