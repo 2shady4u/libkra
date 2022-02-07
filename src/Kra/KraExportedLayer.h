@@ -15,16 +15,16 @@ KRA_NAMESPACE_BEGIN
 // Needless to say... these structures can become quite big...
 struct KraExportedLayer
 {
-    const wchar_t* name;
+    const wchar_t *name;
 
     unsigned int channelCount;
     unsigned int x;
     unsigned int y;
 
     int32_t top;
-	int32_t left;
-	int32_t bottom;
-	int32_t right;
+    int32_t left;
+    int32_t bottom;
+    int32_t right;
 
     uint8_t opacity;
 

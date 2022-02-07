@@ -17,7 +17,7 @@ std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 
 	/* Convert wstring to string */
 	std::string sFilename(filename.begin(), filename.end());
-	const char * path = sFilename.c_str();
+	const char *path = sFilename.c_str();
 
 	/* Open the KRA archive using minizip */
 	unzFile m_zf = unzOpen(path);
@@ -33,7 +33,7 @@ std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 	{
 		printf("(Parsing Document) Found 'maindoc.xml', extracting document and layer properties\n");
 	}
-	else 
+	else
 	{
 		printf("(Parsing Document) WARNING: KRA archive did not contain maindoc.xml!\n");
 		return NULL;
@@ -47,7 +47,7 @@ std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 	xmlDocument.Parse(xmlString.c_str());
 	tinyxml2::XMLElement *xmlElement = xmlDocument.FirstChildElement("DOC")->FirstChildElement("IMAGE");
 
-    std::unique_ptr<KraDocument> document = std::make_unique<KraDocument>();
+	std::unique_ptr<KraDocument> document = std::make_unique<KraDocument>();
 	/* Get important document attributes from the XML-file */
 	document->width = ParseUIntAttribute(xmlElement, "width");
 	document->height = ParseUIntAttribute(xmlElement, "height");
@@ -85,7 +85,7 @@ std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 		{
 			const std::string &layerPath = (std::string)document->name + "/layers/" + (std::string)layer->filename;
 			std::vector<unsigned char> layerContent;
-			const char* cLayerPath = layerPath.c_str(); 
+			const char *cLayerPath = layerPath.c_str();
 			int errorCode = unzLocateFile(m_zf, cLayerPath, 1);
 			errorCode += extractCurrentFileToVector(layerContent, m_zf);
 			if (errorCode == UNZ_OK)
@@ -103,7 +103,6 @@ std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename)
 	errorCode = unzClose(m_zf);
 
 	return document;
-
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -228,7 +227,7 @@ std::vector<std::unique_ptr<KraLayer>> ParseLayers(tinyxml2::XMLElement *xmlElem
 
 		std::wstring ws(layer->name);
 		std::string str(ws.begin(), ws.end());
-		const char * cname = str.c_str();
+		const char *cname = str.c_str();
 
 		printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", cname);
 		printf("(Parsing Document)  	>> name = %s\n", cname);
@@ -352,10 +351,10 @@ std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> laye
 		int tileArea = tile->tileHeight * tile->tileWidth;
 		for (int i = 0; i < tileArea; i++)
 		{
-			sortedOutput[jj] = output[2 * tileArea + i];	 //RED CHANNEL
-			sortedOutput[jj + 1] = output[tileArea + i];	 //GREEN CHANNEL
-			sortedOutput[jj + 2] = output[i];				 //BLUE CHANNEL
-			sortedOutput[jj + 3] = output[3 * tileArea + i]; //ALPHA CHANNEL
+			sortedOutput[jj] = output[2 * tileArea + i];	 // RED CHANNEL
+			sortedOutput[jj + 1] = output[tileArea + i];	 // GREEN CHANNEL
+			sortedOutput[jj + 2] = output[i];				 // BLUE CHANNEL
+			sortedOutput[jj + 3] = output[3 * tileArea + i]; // ALPHA CHANNEL
 			jj = jj + 4;
 		}
 		tile->data = std::move(sortedOutput);
@@ -447,14 +446,14 @@ std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned i
 // Extract the data content of the current file in the ZIP archive to a vector.
 // ---------------------------------------------------------------------------------------------------------------------
 
-int extractCurrentFileToVector(std::vector<unsigned char>& resultVector, unzFile& m_zf)
+int extractCurrentFileToVector(std::vector<unsigned char> &resultVector, unzFile &m_zf)
 {
 	size_t errorCode = UNZ_ERRNO;
- 	unz_file_info64 file_info = { 0 };
-    char filename_inzip[256] = { 0 };
+	unz_file_info64 file_info = {0};
+	char filename_inzip[256] = {0};
 
 	/* Get the required size necessary to store the file content. */
-    errorCode = unzGetCurrentFileInfo64(m_zf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+	errorCode = unzGetCurrentFileInfo64(m_zf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
 	size_t uncompressed_size = file_info.uncompressed_size;
 
 	errorCode = unzOpenCurrentFile(m_zf);
@@ -466,13 +465,13 @@ int extractCurrentFileToVector(std::vector<unsigned char>& resultVector, unzFile
 	/* error_code serves also as the number of bytes that were read... */
 	do
 	{
-	/* Read the data in parts of size WRITEBUFFERSIZE */
-	/* and keep reading until the function returns zero or lower. */
-	errorCode = unzReadCurrentFile(m_zf, buffer.data(), (unsigned int)buffer.size());
-	if (errorCode < 0 || errorCode == 0)
-		break;
+		/* Read the data in parts of size WRITEBUFFERSIZE */
+		/* and keep reading until the function returns zero or lower. */
+		errorCode = unzReadCurrentFile(m_zf, buffer.data(), (unsigned int)buffer.size());
+		if (errorCode < 0 || errorCode == 0)
+			break;
 
-	resultVector.insert(resultVector.end(), buffer.data(), buffer.data() + errorCode);
+		resultVector.insert(resultVector.end(), buffer.data(), buffer.data() + errorCode);
 
 	} while (errorCode > 0);
 
@@ -481,7 +480,6 @@ int extractCurrentFileToVector(std::vector<unsigned char>& resultVector, unzFile
 
 	return (int)errorCode;
 }
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Decompression function for LZF copied directly (with minor modifications) from the Krita codebase (libs\image\tiles3\swap\kis_lzf_compression.cpp).

@@ -16,8 +16,8 @@ KRA_NAMESPACE_BEGIN
 // The actual image data is found in the tiles vector.
 struct KraLayer
 {
-    const wchar_t* name;
-    const char* filename;
+    const wchar_t *name;
+    const char *filename;
 
     unsigned int channelCount;
     unsigned int x;

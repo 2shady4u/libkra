@@ -22,13 +22,13 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
         if (layer->type != kraLayerType::PAINT_LAYER)
         {
             std::wstring ws(layer->name);
-		    std::string str(ws.begin(), ws.end());
-		    const char * cname = str.c_str();
+            std::string str(ws.begin(), ws.end());
+            const char *cname = str.c_str();
             printf("(Exporting Document) Ignoring non-exportable Layer '%s'\n", cname);
         }
         else
         {
-             std::unique_ptr<KraExportedLayer> exportedLayer = std::make_unique<KraExportedLayer>();
+            std::unique_ptr<KraExportedLayer> exportedLayer = std::make_unique<KraExportedLayer>();
             /* Copy all important properties immediately */
             exportedLayer->name = layer->name;
             exportedLayer->channelCount = layer->channelCount;
@@ -67,7 +67,8 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
             unsigned int layerHeight = (unsigned int)(exportedLayer->bottom - exportedLayer->top);
             unsigned int layerWidth = (unsigned int)(exportedLayer->right - exportedLayer->left);
 
-            if (layer->tiles.size() == 0){
+            if (layer->tiles.size() == 0)
+            {
                 printf("(Exporting Document) Exported Layer '%ws' is empty... skipping!\n", exportedLayer->name);
                 continue;
             }
@@ -78,8 +79,8 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
             size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressedLength;
 
             std::wstring ws(exportedLayer->name);
-		    std::string str(ws.begin(), ws.end());
-		    const char * cname = str.c_str();
+            std::string str(ws.begin(), ws.end());
+            const char *cname = str.c_str();
 
             printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", cname);
             printf("(Exporting Document)  	>> numberOfColumns = %i\n", numberOfColumns);

@@ -20,9 +20,9 @@ struct KraDocument
 	unsigned int height;
 	unsigned int channelCount;
 
-    const char* name;
+	const char *name;
 
-    std::vector<std::unique_ptr<KraLayer>> layers;
+	std::vector<std::unique_ptr<KraLayer>> layers;
 
 	bool corruptionFlag = false;
 };

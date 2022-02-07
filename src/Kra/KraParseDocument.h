@@ -18,19 +18,19 @@
 
 KRA_NAMESPACE_BEGIN
 
-std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring& filename);
+std::unique_ptr<KraDocument> CreateKraDocument(const std::wstring &filename);
 
-unsigned int ParseUIntAttribute(const tinyxml2::XMLElement* xmlElement, const char* attributeName);
-const char* ParseCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
-const wchar_t* ParseWCharAttribute(const tinyxml2::XMLElement* xmlElement, const char* attributeName);
+unsigned int ParseUIntAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
+const char *ParseCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
+const wchar_t *ParseWCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
 
-std::vector<std::unique_ptr<KraLayer>> ParseLayers(tinyxml2::XMLElement* xmlElement);
+std::vector<std::unique_ptr<KraLayer>> ParseLayers(tinyxml2::XMLElement *xmlElement);
 
 std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> layerContent);
-unsigned int ParseHeaderElement(std::vector<unsigned char> layerContent, const std::string & elementName, unsigned int& currentIndex);
-std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned int& currentIndex);
+unsigned int ParseHeaderElement(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex);
+std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned int &currentIndex);
 
-int extractCurrentFileToVector(std::vector<unsigned char>& resultVector, unzFile& m_zf);
-int lzff_decompress(const void* input, int length, void* output, int maxout);
+int extractCurrentFileToVector(std::vector<unsigned char> &resultVector, unzFile &m_zf);
+int lzff_decompress(const void *input, int length, void *output, int maxout);
 
 KRA_NAMESPACE_END

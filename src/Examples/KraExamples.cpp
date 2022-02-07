@@ -125,7 +125,7 @@ int ExampleReadKra(std::wstring rawFile)
 		const wchar_t *layerName = layer->name;
 		unsigned int layerHeight = (unsigned int)(layer->bottom - layer->top);
 		unsigned int layerWidth = (unsigned int)(layer->right - layer->left);
-		//std::unique_ptr<uint8_t[]> data = std::move(layer->data);
+		// std::unique_ptr<uint8_t[]> data = std::move(layer->data);
 		/* Export the layer's data to a texture */
 		std::wstringstream ssFilename;
 		ssFilename << layerName;
@@ -140,7 +140,7 @@ int ExampleReadKra(std::wstring rawFile)
 static void show_usage(std::string name)
 {
 	std::cerr << "Usage: " << name << " [options]\n"
-			  << "\n" 
+			  << "\n"
 			  << "General options:\n"
 			  << "  -h, --help                       Display this help message.\n"
 			  << "  -d,--source <source>             Specify the KRA source file.\n";
