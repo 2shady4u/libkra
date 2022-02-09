@@ -68,7 +68,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers(std::unique
 
             if (layer->tiles.size() == 0)
             {
-                printf("(Exporting Document) Exported Layer '%ws' is empty... skipping!\n", exportedLayer->name);
+                printf("(Exporting Document) Exported Layer '%S' is empty... skipping!\n", exportedLayer->name);
                 continue;
             }
             /* Get a reference tile and extract the number of horizontal and vertical tiles */

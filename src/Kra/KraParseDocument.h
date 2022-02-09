@@ -15,7 +15,10 @@
 #include <tinyxml2/tinyxml2.h>
 #include <zlib/contrib/minizip/unzip.h>
 #include <regex>
+
+#include <locale>
 #include <codecvt>
+#include <memory>
 
 KRA_NAMESPACE_BEGIN
 

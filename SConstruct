@@ -178,6 +178,9 @@ if env['platform'] == 'linux':
         env['CXX'] = 'clang++'
 
     env.Append(CCFLAGS=['-fPIC'])
+    # To compile zlib on Linux without any warning, an additional compiler flag needs to be added here!
+    # This is similar to the exact same compiler flag added for macOS targets... except without the crash!
+    env.Append(CCFLAGS=['-DHAVE_UNISTD_H'])
     env.Append(CXXFLAGS=['-std=c++17'])
     if env['target'] == 'debug':
         env.Append(CCFLAGS = ['-g3','-Og'])
@@ -210,6 +213,9 @@ elif env['platform'] == 'osx':
         env.Append(LINKFLAGS=["-arch", env["macos_arch"]])
         env.Append(CCFLAGS=["-arch", env["macos_arch"]])
 
+    # For compiling zlib on macOS, an additional compiler flag needs to be added!
+    # See: https://github.com/HaxeFoundation/hxcpp/issues/723
+    env.Append(CCFLAGS=['-DHAVE_UNISTD_H'])
     env.Append(CXXFLAGS=['-std=c++17'])
 
     if env['macos_deployment_target'] != 'default':

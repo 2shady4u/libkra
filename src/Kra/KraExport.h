@@ -13,7 +13,9 @@
 #include "KraTile.h"
 #include "KraExportedLayer.h"
 
+#include <locale>
 #include <codecvt>
+#include <memory>
 
 KRA_NAMESPACE_BEGIN
 

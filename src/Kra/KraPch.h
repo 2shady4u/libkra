@@ -17,6 +17,9 @@
 #include <iostream>
 #include <sstream>
 
+#include <locale>
+#include <memory>
+
 #define WRITEBUFFERSIZE (8192)
 
 // Enum to define the layer type of the Kra layer.
