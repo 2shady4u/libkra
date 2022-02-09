@@ -139,7 +139,7 @@ opts.Add(PathVariable(
 opts.Add(PathVariable(
     'target_name', 
     'The library name.', 
-    'gdkrapsdimporter', 
+    'libkra_cl', 
     PathVariable.PathAccept
 ))
 
