@@ -5,16 +5,14 @@
 // See LICENSE in the project root for license information.
 // ############################################################################ #
 
-#pragma once
-
-#include "KraPch.h"
-
-KRA_NAMESPACE_BEGIN
+#ifndef KRA_EXPORTED_LAYER_H
+#define KRA_EXPORTED_LAYER_H
 
 // KraExportedLayer is a structure in which the decompressed binary data for the entire image is saved.
 // Needless to say... these structures can become quite big...
-struct KraExportedLayer
+class KraExportedLayer
 {
+public:
     const wchar_t *name;
 
     unsigned int channelCount;
@@ -33,4 +31,4 @@ struct KraExportedLayer
     std::unique_ptr<uint8_t[]> data;
 };
 
-KRA_NAMESPACE_END
+#endif // KRA_EXPORTED_LAYER_H

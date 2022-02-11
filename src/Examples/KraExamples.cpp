@@ -5,14 +5,10 @@
 // See LICENSE in the project root for license information.
 // ############################################################################ #
 
-#include "../Kra/KraDocument.h"
-#include "../Kra/KraExportedLayer.h"
-#include "../Kra/KraParseDocument.h"
-#include "../Kra/KraExport.h"
+#include "../Kra/kra_file.h"
+#include "../Kra/kra_exported_layer.h"
 
 #include "../../libpng/png.h"
-
-KRA_USING_NAMESPACE;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Here the data gets exported and saved as a png using the libpng library.
@@ -111,13 +107,14 @@ finalise:
 // ---------------------------------------------------------------------------------------------------------------------
 int ExampleReadKra(std::wstring rawFile)
 {
-	std::unique_ptr<KraDocument> document = CreateKraDocument(rawFile);
+	std::unique_ptr<KraFile> document = std::make_unique<KraFile>();
+	document->load(rawFile);
 	if (document == NULL)
 	{
 		return 1;
 	}
 
-	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = CreateKraExportLayers(document);
+	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = document->CreateKraExportLayers();
 
 	for (auto const &layer : exportedLayers)
 	{

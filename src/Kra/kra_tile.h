@@ -5,17 +5,16 @@
 // See LICENSE in the project root for license information.
 // ############################################################################ #
 
-#pragma once
+#ifndef KRA_TILE_H
+#define KRA_TILE_H
 
-#include "KraPch.h"
-
-KRA_NAMESPACE_BEGIN
+#include <memory>
 
 // KraTile is a structure in which the decompressed binary data for a single tile is stored.
 // Each KRA layer consists of a vector of tiles that hold the actual image data.
-struct KraTile
+class KraTile
 {
-
+public:
     // Version statement of the tile, always equal to 2.
     unsigned int version;
     // Number of vertical pixels stored in the tile, always equal to 64.
@@ -45,4 +44,4 @@ struct KraTile
     bool corruptionFlag = false;
 };
 
-KRA_NAMESPACE_END
+#endif // KRA_TILE_H
