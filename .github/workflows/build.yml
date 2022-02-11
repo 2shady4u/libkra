@@ -11,9 +11,25 @@ env:
   TARGET: release
 
 jobs:
-  windows-compilation:
-    name: Windows Compilation
-    runs-on: "windows-latest"
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows Compilation
+            os: "windows-latest"
+            artifact-name: win64
+
+          - name: Ubuntu Compilation
+            os: "ubuntu-20.04"
+            artifact-name: linux
+
+          - name: MacOS Compilation
+            os: "macos-11"
+            artifact-name: osx
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,12 +50,13 @@ jobs:
       - name: Configuring Python packages
         run: |
           python -c "import sys; print(sys.version)"
-          python -m pip install scons pywin32
+          python -m pip install scons
           python --version
           scons --version
 
       # The prebuilt pnglib configuration has to be copied to the base folder!
-      - name: Compilation
+      - name: Windows Compilation
+        if: runner.os == 'Windows'
         run: |
           if(-Not (Test-Path -Path ${{env.PROJECT_FOLDER}}\${{env.TARGET_PATH}}))
           {
@@ -49,48 +66,9 @@ jobs:
           Copy-Item "libpng/scripts/pnglibconf.h.prebuilt" -Destination "libpng/pnglibconf.h"
           scons platform=windows target=${{env.TARGET}} target_path=${{env.TARGET_PATH}} target_name=${{env.TARGET_NAME}}
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v1
-        with:
-          name: win64
-          path: ${{env.PROJECT_FOLDER}}\${{env.TARGET_PATH}}
-
-  linux-compilation:
-    name: Ubuntu Compilation
-    runs-on: "ubuntu-20.04"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          lfs: true
-          submodules: recursive
-
-      # Install all packages (except scons)
-      - name: Configure dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
-            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
-
-      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v2
-        with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
-
-      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
-      - name: Configuring Python packages
-        run: |
-          python -c "import sys; print(sys.version)"
-          python -m pip install scons
-          python --version
-          scons --version
-
       # The prebuilt pnglib configuration has to be copied to the base folder!
-      - name: Compilation
+      - name: Linux or MacOS Compilation
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
           mkdir -v -p ${{env.PROJECT_FOLDER}}/${{env.TARGET_PATH}}
           cd ${{env.PROJECT_FOLDER}}
@@ -100,46 +78,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v1
         with:
-          name: x11
-          path: ${{env.PROJECT_FOLDER}}/${{env.TARGET_PATH}}
-
-  macos-compilation:
-    name: MacOS Compilation
-    runs-on: "macos-11"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          lfs: true
-          submodules: recursive
-
-      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v2
-        with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
-
-      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
-      - name: Configuring Python packages
-        run: |
-          python -c "import sys; print(sys.version)"
-          python -m pip install scons
-          python --version
-          scons --version
-
-      # The prebuilt pnglib configuration has to be copied to the base folder!
-      - name: Compilation
-        run: |
-          mkdir -v -p ${{env.PROJECT_FOLDER}}/${{env.TARGET_PATH}}
-          cd ${{env.PROJECT_FOLDER}}
-          cp "libpng/scripts/pnglibconf.h.prebuilt" "libpng/pnglibconf.h"
-          scons platform=osx target=${{env.TARGET}} target_path=${{env.TARGET_PATH}} target_name=${{env.TARGET_NAME}}
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v1
-        with:
-          name: osx
+          name: ${{ matrix.artifact-name }}
           path: ${{env.PROJECT_FOLDER}}/${{env.TARGET_PATH}}
