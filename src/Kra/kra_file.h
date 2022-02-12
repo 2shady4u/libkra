@@ -11,8 +11,9 @@
 #include "kra_layer.h"
 #include "kra_exported_layer.h"
 
-#include <tinyxml2/tinyxml2.h>
-#include <zlib/contrib/minizip/unzip.h>
+#include "../tinyxml2/tinyxml2.h"
+#include "../../zlib/contrib/minizip/unzip.h"
+
 #include <regex>
 #include <stddef.h>
 #include <string>
