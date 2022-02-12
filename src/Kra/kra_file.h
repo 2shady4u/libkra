@@ -59,6 +59,7 @@ public:
 	bool corruptionFlag = false;
 
 	void load(const std::wstring &p_path);
+	std::unique_ptr<KraExportedLayer> get_exported_layer(int p_layer_index);
 	std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers();
 };
 

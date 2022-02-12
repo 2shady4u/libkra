@@ -93,6 +93,116 @@ void KraFile::load(const std::wstring &p_path)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Take a single layer and compose its tiles into something that can be used externally
+// ---------------------------------------------------------------------------------------------------------------------
+std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
+{
+    std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
+
+    if (p_layer_index < 0 || p_layer_index >= layers.size())
+    {
+        // There should be some kind of error here
+    }
+    else
+    {
+        auto const &layer = layers.at(p_layer_index);
+        /* Copy all important properties immediately */
+        exported_layer->name = layer->name;
+        exported_layer->channelCount = layer->channelCount;
+        exported_layer->x = layer->x;
+        exported_layer->y = layer->y;
+        exported_layer->opacity = layer->opacity;
+        exported_layer->isVisible = layer->isVisible;
+
+        /*Initialize the extents of this layer to 0 */
+        exported_layer->left = 0;
+        exported_layer->right = 0;
+        exported_layer->top = 0;
+        exported_layer->bottom = 0;
+
+        /* find the extents of the layer canvas */
+        for (auto const &tile : layer->tiles)
+        {
+            if (tile->left < exported_layer->left)
+            {
+                exported_layer->left = tile->left;
+            }
+            if (tile->left + (int32_t)tile->tileWidth > exported_layer->right)
+            {
+                exported_layer->right = tile->left + (int32_t)tile->tileWidth;
+            }
+
+            if (tile->top < exported_layer->top)
+            {
+                exported_layer->top = tile->top;
+            }
+            if (tile->top + (int32_t)tile->tileHeight > exported_layer->bottom)
+            {
+                exported_layer->bottom = tile->top + (int32_t)tile->tileHeight;
+            }
+        }
+        unsigned int layerHeight = (unsigned int)(exported_layer->bottom - exported_layer->top);
+        unsigned int layerWidth = (unsigned int)(exported_layer->right - exported_layer->left);
+
+        if (layer->tiles.size() == 0)
+        {
+            printf("(Exporting Document) Exported Layer '%S' is empty... skipping!\n", exported_layer->name);
+        }
+        else
+        {
+            /* Get a reference tile and extract the number of horizontal and vertical tiles */
+            std::unique_ptr<KraTile> &referenceTile = layer->tiles[0];
+            unsigned int numberOfColumns = layerWidth / referenceTile->tileWidth;
+            unsigned int numberOfRows = layerHeight / referenceTile->tileHeight;
+            size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressedLength;
+
+            std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exported_layer->name);
+            const char *cname = str.c_str();
+
+            printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", cname);
+            printf("(Exporting Document)  	>> numberOfColumns = %i\n", numberOfColumns);
+            printf("(Exporting Document)  	>> numberOfRows = %i\n", numberOfRows);
+            printf("(Exporting Document)  	>> layerWidth = %i\n", layerWidth);
+            printf("(Exporting Document)  	>> layerHeight = %i\n", layerHeight);
+            printf("(Exporting Document)  	>> top = %i\n", exported_layer->top);
+            printf("(Exporting Document)  	>> bottom = %i\n", exported_layer->bottom);
+            printf("(Exporting Document)  	>> left = %i\n", exported_layer->left);
+            printf("(Exporting Document)  	>> right = %i\n", exported_layer->right);
+            printf("(Exporting Document)  	>> composedDataSize = %i\n", static_cast<int>(composedDataSize));
+
+            /* Allocate space for the output data! */
+
+            std::unique_ptr<uint8_t[]> composedData = std::make_unique<uint8_t[]>(composedDataSize);
+            /* I initialize all these elements to zero to avoid empty tiles from being filled with junk */
+            /* Problem might be that this takes quite a lot of time... */
+            /* TODO: Only the empty tiles should be initialized to zero! */
+
+            /* IMPORTANT: Not all the tiles exist! */
+            /* Empty tiles (containing full ALPHA) are not added as tiles! */
+            /* Now we have to construct the data in such a way that all tiles are in the correct positions */
+            for (auto const &tile : layer->tiles)
+            {
+                int currentNormalizedTop = tile->top - exported_layer->top;
+                int currentNormalizedLeft = tile->left - exported_layer->left;
+                for (int rowIndex = 0; rowIndex < (int)tile->tileHeight; rowIndex++)
+                {
+                    uint8_t *destination = composedData.get() + tile->pixelSize * tile->tileWidth * rowIndex * numberOfColumns;
+                    destination += tile->pixelSize * currentNormalizedLeft;
+                    destination += tile->pixelSize * tile->tileWidth * currentNormalizedTop * numberOfColumns;
+                    uint8_t *source = tile->data.get() + tile->pixelSize * tile->tileWidth * rowIndex;
+                    size_t size = tile->pixelSize * tile->tileWidth;
+                    /* Copy the row of the tile to the composed image */
+                    std::memcpy(destination, source, size);
+                }
+            }
+            exported_layer->data = std::move(composedData);
+        }
+    }
+
+    return exported_layer;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Take all the layers and their tiles and construct/compose the complete image!
 // ---------------------------------------------------------------------------------------------------------------------
 std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
