@@ -18,11 +18,11 @@ public:
     // Version statement of the tile, always equal to 2.
     unsigned int version;
     // Number of vertical pixels stored in the tile, always equal to 64.
-    unsigned int tileHeight;
+    unsigned int tile_height;
     // Number of horizontal pixels stored in the tile, always equal to 64.
-    unsigned int tileWidth;
+    unsigned int tile_width;
     // Number of elements in each pixel, is equal to 4 for RGBA.
-    unsigned int pixelSize;
+    unsigned int pixel_size;
 
     // These can also be negative!!!
     // The left (X) position of the tile.

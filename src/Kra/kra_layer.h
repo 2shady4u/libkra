@@ -34,7 +34,7 @@ public:
 
     uint8_t opacity;
 
-    uint32_t type;
+    KraLayerType type;
     bool visible;
 
     std::vector<std::unique_ptr<KraTile>> tiles;

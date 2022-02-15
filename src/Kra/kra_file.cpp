@@ -66,8 +66,8 @@ void KraFile::load(const std::wstring &p_path)
     layers = ParseLayers(xmlElement);
 
     /* Go through all the layers and initiate their tiles */
-    /* Only layers of type paintlayer get  their tiles parsed8 */
-    /* This also automatically de-encrypts the tile data */
+    /* Only layers of the type paintlayer get their tiles parsed */
+    /* This also automatically decrypts the tile data */
     for (auto &layer : layers)
     {
         if (layer->type == KraLayer::PAINT_LAYER)
@@ -127,18 +127,18 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
             {
                 exported_layer->left = tile->left;
             }
-            if (tile->left + (int32_t)tile->tileWidth > exported_layer->right)
+            if (tile->left + (int32_t)tile->tile_width > exported_layer->right)
             {
-                exported_layer->right = tile->left + (int32_t)tile->tileWidth;
+                exported_layer->right = tile->left + (int32_t)tile->tile_width;
             }
 
             if (tile->top < exported_layer->top)
             {
                 exported_layer->top = tile->top;
             }
-            if (tile->top + (int32_t)tile->tileHeight > exported_layer->bottom)
+            if (tile->top + (int32_t)tile->tile_height > exported_layer->bottom)
             {
-                exported_layer->bottom = tile->top + (int32_t)tile->tileHeight;
+                exported_layer->bottom = tile->top + (int32_t)tile->tile_height;
             }
         }
         unsigned int layerHeight = (unsigned int)(exported_layer->bottom - exported_layer->top);
@@ -152,8 +152,8 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
         {
             /* Get a reference tile and extract the number of horizontal and vertical tiles */
             std::unique_ptr<KraTile> &referenceTile = layer->tiles[0];
-            unsigned int numberOfColumns = layerWidth / referenceTile->tileWidth;
-            unsigned int numberOfRows = layerHeight / referenceTile->tileHeight;
+            unsigned int numberOfColumns = layerWidth / referenceTile->tile_width;
+            unsigned int numberOfRows = layerHeight / referenceTile->tile_height;
             size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressedLength;
 
             std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exported_layer->name);
@@ -184,13 +184,13 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
             {
                 int currentNormalizedTop = tile->top - exported_layer->top;
                 int currentNormalizedLeft = tile->left - exported_layer->left;
-                for (int rowIndex = 0; rowIndex < (int)tile->tileHeight; rowIndex++)
+                for (int rowIndex = 0; rowIndex < (int)tile->tile_height; rowIndex++)
                 {
-                    uint8_t *destination = composedData.get() + tile->pixelSize * tile->tileWidth * rowIndex * numberOfColumns;
-                    destination += tile->pixelSize * currentNormalizedLeft;
-                    destination += tile->pixelSize * tile->tileWidth * currentNormalizedTop * numberOfColumns;
-                    uint8_t *source = tile->data.get() + tile->pixelSize * tile->tileWidth * rowIndex;
-                    size_t size = tile->pixelSize * tile->tileWidth;
+                    uint8_t *destination = composedData.get() + tile->pixel_size * tile->tile_width * rowIndex * numberOfColumns;
+                    destination += tile->pixel_size * currentNormalizedLeft;
+                    destination += tile->pixel_size * tile->tile_width * currentNormalizedTop * numberOfColumns;
+                    uint8_t *source = tile->data.get() + tile->pixel_size * tile->tile_width * rowIndex;
+                    size_t size = tile->pixel_size * tile->tile_width;
                     /* Copy the row of the tile to the composed image */
                     std::memcpy(destination, source, size);
                 }
@@ -242,18 +242,18 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
                 {
                     exportedLayer->left = tile->left;
                 }
-                if (tile->left + (int32_t)tile->tileWidth > exportedLayer->right)
+                if (tile->left + (int32_t)tile->tile_width > exportedLayer->right)
                 {
-                    exportedLayer->right = tile->left + (int32_t)tile->tileWidth;
+                    exportedLayer->right = tile->left + (int32_t)tile->tile_width;
                 }
 
                 if (tile->top < exportedLayer->top)
                 {
                     exportedLayer->top = tile->top;
                 }
-                if (tile->top + (int32_t)tile->tileHeight > exportedLayer->bottom)
+                if (tile->top + (int32_t)tile->tile_height > exportedLayer->bottom)
                 {
-                    exportedLayer->bottom = tile->top + (int32_t)tile->tileHeight;
+                    exportedLayer->bottom = tile->top + (int32_t)tile->tile_height;
                 }
             }
             unsigned int layerHeight = (unsigned int)(exportedLayer->bottom - exportedLayer->top);
@@ -266,8 +266,8 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
             }
             /* Get a reference tile and extract the number of horizontal and vertical tiles */
             std::unique_ptr<KraTile> &referenceTile = layer->tiles[0];
-            unsigned int numberOfColumns = layerWidth / referenceTile->tileWidth;
-            unsigned int numberOfRows = layerHeight / referenceTile->tileHeight;
+            unsigned int numberOfColumns = layerWidth / referenceTile->tile_width;
+            unsigned int numberOfRows = layerHeight / referenceTile->tile_height;
             size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressedLength;
 
             std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exportedLayer->name);
@@ -298,13 +298,13 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
             {
                 int currentNormalizedTop = tile->top - exportedLayer->top;
                 int currentNormalizedLeft = tile->left - exportedLayer->left;
-                for (int rowIndex = 0; rowIndex < (int)tile->tileHeight; rowIndex++)
+                for (int rowIndex = 0; rowIndex < (int)tile->tile_height; rowIndex++)
                 {
-                    uint8_t *destination = composedData.get() + tile->pixelSize * tile->tileWidth * rowIndex * numberOfColumns;
-                    destination += tile->pixelSize * currentNormalizedLeft;
-                    destination += tile->pixelSize * tile->tileWidth * currentNormalizedTop * numberOfColumns;
-                    uint8_t *source = tile->data.get() + tile->pixelSize * tile->tileWidth * rowIndex;
-                    size_t size = tile->pixelSize * tile->tileWidth;
+                    uint8_t *destination = composedData.get() + tile->pixel_size * tile->tile_width * rowIndex * numberOfColumns;
+                    destination += tile->pixel_size * currentNormalizedLeft;
+                    destination += tile->pixel_size * tile->tile_width * currentNormalizedTop * numberOfColumns;
+                    uint8_t *source = tile->data.get() + tile->pixel_size * tile->tile_width * rowIndex;
+                    size_t size = tile->pixel_size * tile->tile_width;
                     /* Copy the row of the tile to the composed image */
                     std::memcpy(destination, source, size);
                 }
@@ -500,9 +500,9 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
     {
         std::unique_ptr<KraTile> tile = std::make_unique<KraTile>();
         tile->version = version;
-        tile->tileWidth = tileWidth;
-        tile->tileHeight = tileHeight;
-        tile->pixelSize = pixelSize;
+        tile->tile_width = tileWidth;
+        tile->tile_height = tileHeight;
+        tile->pixel_size = pixelSize;
         tile->decompressedLength = decompressedLength;
 
         /* Now it is time to extract & decompress the data */
@@ -560,7 +560,7 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
         /* TODO: Sometimes there won't be any alpha channel when it is RGB instead of RGBA. */
         std::unique_ptr<uint8_t[]> sortedOutput = std::make_unique<uint8_t[]>(tile->decompressedLength);
         int jj = 0;
-        int tileArea = tile->tileHeight * tile->tileWidth;
+        int tileArea = tile->tile_height * tile->tile_width;
         for (int i = 0; i < tileArea; i++)
         {
             sortedOutput[jj] = output[2 * tileArea + i];     // RED CHANNEL
