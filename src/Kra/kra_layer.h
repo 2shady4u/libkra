@@ -28,14 +28,14 @@ public:
     const wchar_t *name;
     const char *filename;
 
-    unsigned int channelCount;
+    unsigned int channel_count;
     unsigned int x;
     unsigned int y;
 
     uint8_t opacity;
 
     uint32_t type;
-    bool isVisible;
+    bool visible;
 
     std::vector<std::unique_ptr<KraTile>> tiles;
 

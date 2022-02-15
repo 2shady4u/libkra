@@ -46,21 +46,21 @@ void KraFile::load(const std::wstring &p_path)
     /* Each separate layer has its own color space in KRA, so not sure if this necessary... */
     if (strcmp(colorSpaceName, "RGBA") == 0)
     {
-        channelCount = 4u;
+        channel_count = 4u;
     }
     else if (strcmp(colorSpaceName, "RGB") == 0)
     {
-        channelCount = 3u;
+        channel_count = 3u;
     }
     else
     {
-        channelCount = 0u;
+        channel_count = 0u;
     }
     printf("(Parsing Document) Document properties are extracted and have following values:\n");
     printf("(Parsing Document)  	>> width = %i\n", width);
     printf("(Parsing Document)  	>> height = %i\n", height);
     printf("(Parsing Document)  	>> name = %s\n", name);
-    printf("(Parsing Document)  	>> channelCount = %i\n", channelCount);
+    printf("(Parsing Document)  	>> channel_count = %i\n", channel_count);
 
     /* Parse all the layers registered in the maindoc.xml and add them to the document */
     layers = ParseLayers(xmlElement);
@@ -108,11 +108,11 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
         auto const &layer = layers.at(p_layer_index);
         /* Copy all important properties immediately */
         exported_layer->name = layer->name;
-        exported_layer->channelCount = layer->channelCount;
+        exported_layer->channel_count = layer->channel_count;
         exported_layer->x = layer->x;
         exported_layer->y = layer->y;
         exported_layer->opacity = layer->opacity;
-        exported_layer->isVisible = layer->isVisible;
+        exported_layer->visible = layer->visible;
 
         /*Initialize the extents of this layer to 0 */
         exported_layer->left = 0;
@@ -223,11 +223,11 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
             std::unique_ptr<KraExportedLayer> exportedLayer = std::make_unique<KraExportedLayer>();
             /* Copy all important properties immediately */
             exportedLayer->name = layer->name;
-            exportedLayer->channelCount = layer->channelCount;
+            exportedLayer->channel_count = layer->channel_count;
             exportedLayer->x = layer->x;
             exportedLayer->y = layer->y;
             exportedLayer->opacity = layer->opacity;
-            exportedLayer->isVisible = layer->isVisible;
+            exportedLayer->visible = layer->visible;
 
             /*Initialize the extents of this layer to 0 */
             exportedLayer->left = 0;
@@ -398,7 +398,7 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::ParseLayers(tinyxml2::XMLElement
         layer->x = ParseUIntAttribute(layerNode, "x");
         layer->y = ParseUIntAttribute(layerNode, "y");
         layer->opacity = ParseUIntAttribute(layerNode, "opacity");
-        layer->isVisible = ParseUIntAttribute(layerNode, "visible");
+        layer->visible = ParseUIntAttribute(layerNode, "visible");
 
         layer->name = ParseWCharAttribute(layerNode, "name");
         layer->filename = ParseCharAttribute(layerNode, "filename");
@@ -407,15 +407,15 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::ParseLayers(tinyxml2::XMLElement
         /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
         if (strcmp(colorSpaceName, "RGBA") == 0)
         {
-            layer->channelCount = 4u;
+            layer->channel_count = 4u;
         }
         else if (strcmp(colorSpaceName, "RGB") == 0)
         {
-            layer->channelCount = 3u;
+            layer->channel_count = 3u;
         }
         else
         {
-            layer->channelCount = 0u;
+            layer->channel_count = 0u;
         }
 
         const char *nodeType = ParseCharAttribute(layerNode, "nodetype");
@@ -444,10 +444,10 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::ParseLayers(tinyxml2::XMLElement
         printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", cname);
         printf("(Parsing Document)  	>> name = %s\n", cname);
         printf("(Parsing Document)  	>> filename = %s\n", layer->filename);
-        printf("(Parsing Document)  	>> channelCount = %i\n", layer->channelCount);
+        printf("(Parsing Document)  	>> channel_count = %i\n", layer->channel_count);
         printf("(Parsing Document)  	>> opacity = %i\n", layer->opacity);
         printf("(Parsing Document)  	>> type = %i\n", layer->type);
-        printf("(Parsing Document)  	>> isVisible = %s\n", layer->isVisible ? "true" : "false");
+        printf("(Parsing Document)  	>> visible = %s\n", layer->visible ? "true" : "false");
         printf("(Parsing Document)  	>> x = %i\n", layer->x);
         printf("(Parsing Document)  	>> y = %i\n", layer->y);
 

@@ -50,7 +50,7 @@ private:
 public:
 	unsigned int width;
 	unsigned int height;
-	unsigned int channelCount;
+	unsigned int channel_count;
 
 	const char *name;
 

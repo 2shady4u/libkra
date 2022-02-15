@@ -15,7 +15,7 @@ class KraExportedLayer
 public:
     const wchar_t *name;
 
-    unsigned int channelCount;
+    unsigned int channel_count;
     unsigned int x;
     unsigned int y;
 
@@ -26,7 +26,7 @@ public:
 
     uint8_t opacity;
 
-    bool isVisible;
+    bool visible;
 
     std::unique_ptr<uint8_t[]> data;
 };
