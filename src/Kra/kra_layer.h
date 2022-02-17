@@ -39,7 +39,7 @@ public:
 
     std::vector<std::unique_ptr<KraTile>> tiles;
 
-    bool corruptionFlag = false;
+    bool corruption_flag = false;
 };
 
 #endif // KRA_LAYER_H

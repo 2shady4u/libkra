@@ -30,7 +30,7 @@ void KraFile::load(const std::wstring &p_path)
     }
 
     std::vector<unsigned char> resultVector;
-    extractCurrentFileToVector(resultVector, m_zf);
+    _extract_current_file_to_vector(resultVector, m_zf);
     /* Put the vector into a string and parse it using tinyXML2 */
     std::string xmlString(resultVector.begin(), resultVector.end());
     tinyxml2::XMLDocument xmlDocument;
@@ -38,10 +38,10 @@ void KraFile::load(const std::wstring &p_path)
     tinyxml2::XMLElement *xmlElement = xmlDocument.FirstChildElement("DOC")->FirstChildElement("IMAGE");
 
     /* Get important document attributes from the XML-file */
-    width = ParseUIntAttribute(xmlElement, "width");
-    height = ParseUIntAttribute(xmlElement, "height");
-    name = ParseCharAttribute(xmlElement, "name");
-    const char *colorSpaceName = ParseCharAttribute(xmlElement, "colorspacename");
+    width = _parse_uint_attribute(xmlElement, "width");
+    height = _parse_uint_attribute(xmlElement, "height");
+    name = _parse_char_attribute(xmlElement, "name");
+    const char *colorSpaceName = _parse_char_attribute(xmlElement, "colorspacename");
     /* The color space defines the number of 'channels' */
     /* Each separate layer has its own color space in KRA, so not sure if this necessary... */
     if (strcmp(colorSpaceName, "RGBA") == 0)
@@ -63,7 +63,7 @@ void KraFile::load(const std::wstring &p_path)
     printf("(Parsing Document)  	>> channel_count = %i\n", channel_count);
 
     /* Parse all the layers registered in the maindoc.xml and add them to the document */
-    layers = ParseLayers(xmlElement);
+    layers = _parse_layers(xmlElement);
 
     /* Go through all the layers and initiate their tiles */
     /* Only layers of the type paintlayer get their tiles parsed */
@@ -76,11 +76,11 @@ void KraFile::load(const std::wstring &p_path)
             std::vector<unsigned char> layerContent;
             const char *cLayerPath = layerPath.c_str();
             int errorCode = unzLocateFile(m_zf, cLayerPath, 1);
-            errorCode += extractCurrentFileToVector(layerContent, m_zf);
+            errorCode += _extract_current_file_to_vector(layerContent, m_zf);
             if (errorCode == UNZ_OK)
             {
                 /* Start extracting the tile data. */
-                layer->tiles = ParseTiles(layerContent);
+                layer->tiles = _parse_tiles(layerContent);
             }
             else
             {
@@ -154,7 +154,7 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
             std::unique_ptr<KraTile> &referenceTile = layer->tiles[0];
             unsigned int numberOfColumns = layerWidth / referenceTile->tile_width;
             unsigned int numberOfRows = layerHeight / referenceTile->tile_height;
-            size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressedLength;
+            size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressed_length;
 
             std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exported_layer->name);
             const char *cname = str.c_str();
@@ -205,7 +205,7 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
 // ---------------------------------------------------------------------------------------------------------------------
 // Take all the layers and their tiles and construct/compose the complete image!
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
+std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers()
 {
 
     std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers;
@@ -268,7 +268,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
             std::unique_ptr<KraTile> &referenceTile = layer->tiles[0];
             unsigned int numberOfColumns = layerWidth / referenceTile->tile_width;
             unsigned int numberOfRows = layerHeight / referenceTile->tile_height;
-            size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressedLength;
+            size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressed_length;
 
             std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exportedLayer->name);
             const char *cname = str.c_str();
@@ -321,7 +321,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::CreateKraExportLayers()
 // ---------------------------------------------------------------------------------------------------------------------
 // Parses a XMLElement and extracts the UNSIGNED INT attribute value found at the attribute name.
 // ---------------------------------------------------------------------------------------------------------------------
-unsigned int KraFile::ParseUIntAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
+unsigned int KraFile::_parse_uint_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
 {
     unsigned int attributeValue = -1;
     const tinyxml2::XMLAttribute *attribute = xmlElement->FindAttribute(attributeName);
@@ -342,7 +342,7 @@ unsigned int KraFile::ParseUIntAttribute(const tinyxml2::XMLElement *xmlElement,
 // ---------------------------------------------------------------------------------------------------------------------
 // Parses a XMLElement and extracts the CONST CHAR* attribute value found at the attribute name.
 // ---------------------------------------------------------------------------------------------------------------------
-const char *KraFile::ParseCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
+const char *KraFile::_parse_char_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
 {
     const char *attributeValue;
     const tinyxml2::XMLAttribute *attribute = xmlElement->FindAttribute(attributeName);
@@ -360,7 +360,7 @@ const char *KraFile::ParseCharAttribute(const tinyxml2::XMLElement *xmlElement, 
 // ---------------------------------------------------------------------------------------------------------------------
 // Parses a XMLElement and extracts the CONST WCHAR_T* attribute value found at the attribute name.
 // ---------------------------------------------------------------------------------------------------------------------
-const wchar_t *KraFile::ParseWCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
+const wchar_t *KraFile::_parse_wchar_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
 {
     const wchar_t *attributeValue;
     const tinyxml2::XMLAttribute *attribute = xmlElement->FindAttribute(attributeName);
@@ -383,7 +383,7 @@ const wchar_t *KraFile::ParseWCharAttribute(const tinyxml2::XMLElement *xmlEleme
 // ---------------------------------------------------------------------------------------------------------------------
 // Go through the XML-file and extract all the layer properties.
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<std::unique_ptr<KraLayer>> KraFile::ParseLayers(tinyxml2::XMLElement *xmlElement)
+std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLElement *xmlElement)
 {
     std::vector<std::unique_ptr<KraLayer>> layers;
     const tinyxml2::XMLElement *layersElement = xmlElement->FirstChildElement("layers");
@@ -395,14 +395,14 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::ParseLayers(tinyxml2::XMLElement
     {
         std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
         /* Get important layer attributes from the XML-file */
-        layer->x = ParseUIntAttribute(layerNode, "x");
-        layer->y = ParseUIntAttribute(layerNode, "y");
-        layer->opacity = ParseUIntAttribute(layerNode, "opacity");
-        layer->visible = ParseUIntAttribute(layerNode, "visible");
+        layer->x = _parse_uint_attribute(layerNode, "x");
+        layer->y = _parse_uint_attribute(layerNode, "y");
+        layer->opacity = _parse_uint_attribute(layerNode, "opacity");
+        layer->visible = _parse_uint_attribute(layerNode, "visible");
 
-        layer->name = ParseWCharAttribute(layerNode, "name");
-        layer->filename = ParseCharAttribute(layerNode, "filename");
-        const char *colorSpaceName = ParseCharAttribute(layerNode, "colorspacename");
+        layer->name = _parse_wchar_attribute(layerNode, "name");
+        layer->filename = _parse_char_attribute(layerNode, "filename");
+        const char *colorSpaceName = _parse_char_attribute(layerNode, "colorspacename");
         /* The color space defines the number of 'channels' */
         /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
         if (strcmp(colorSpaceName, "RGBA") == 0)
@@ -418,7 +418,7 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::ParseLayers(tinyxml2::XMLElement
             layer->channel_count = 0u;
         }
 
-        const char *nodeType = ParseCharAttribute(layerNode, "nodetype");
+        const char *nodeType = _parse_char_attribute(layerNode, "nodetype");
         /* The color space defines the number of 'channels' */
         /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
         if (strcmp(nodeType, "paintlayer") == 0)
@@ -471,7 +471,7 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::ParseLayers(tinyxml2::XMLElement
 // ---------------------------------------------------------------------------------------------------------------------
 // Extract the tile data and properties from the raw binary data.
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned char> layerContent)
+std::vector<std::unique_ptr<KraTile>> KraFile::_parse_tiles(std::vector<unsigned char> layerContent)
 {
 
     std::vector<std::unique_ptr<KraTile>> tiles;
@@ -481,20 +481,20 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
     unsigned int currentIndex = 0;
 
     /* Extract the main header from the tiles */
-    unsigned int version = ParseHeaderElement(layerContent, "VERSION ", currentIndex);
-    unsigned int tileWidth = ParseHeaderElement(layerContent, "TILEWIDTH ", currentIndex);
-    unsigned int tileHeight = ParseHeaderElement(layerContent, "TILEHEIGHT ", currentIndex);
-    unsigned int pixelSize = ParseHeaderElement(layerContent, "PIXELSIZE ", currentIndex);
-    unsigned int decompressedLength = pixelSize * tileWidth * tileHeight;
+    unsigned int version = _parse_header_element(layerContent, "VERSION ", currentIndex);
+    unsigned int tileWidth = _parse_header_element(layerContent, "TILEWIDTH ", currentIndex);
+    unsigned int tileHeight = _parse_header_element(layerContent, "TILEHEIGHT ", currentIndex);
+    unsigned int pixelSize = _parse_header_element(layerContent, "PIXELSIZE ", currentIndex);
+    unsigned int decompressed_length = pixelSize * tileWidth * tileHeight;
 
     printf("(Parsing Document) Tile properties (Main Header) are extracted and have following values:\n");
     printf("(Parsing Document)  	>> version = %i\n", version);
     printf("(Parsing Document)  	>> tileWidth = %i\n", tileWidth);
     printf("(Parsing Document)  	>> tileHeight = %i\n", tileHeight);
     printf("(Parsing Document)  	>> pixelSize = %i\n", pixelSize);
-    printf("(Parsing Document)  	>> decompressedLength = %i\n", decompressedLength);
+    printf("(Parsing Document)  	>> decompressed_length = %i\n", decompressed_length);
 
-    unsigned int numberOfTiles = ParseHeaderElement(layerContent, "DATA ", currentIndex);
+    unsigned int numberOfTiles = _parse_header_element(layerContent, "DATA ", currentIndex);
 
     for (unsigned int i = 0; i < numberOfTiles; i++)
     {
@@ -503,11 +503,11 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
         tile->tile_width = tileWidth;
         tile->tile_height = tileHeight;
         tile->pixel_size = pixelSize;
-        tile->decompressedLength = decompressedLength;
+        tile->decompressed_length = decompressed_length;
 
         /* Now it is time to extract & decompress the data */
         /* First the non-general element of the header needs to be extracted */
-        std::string headerString = GetHeaderElement(layerContent, currentIndex);
+        std::string headerString = _get_header_element(layerContent, currentIndex);
         std::regex e("(-?\\d*),(-?\\d*),(\\w*),(\\d*)");
         std::smatch sm;
         std::regex_match(headerString, sm, e);
@@ -531,20 +531,20 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
         /* The number of compressed bytes coming after this header */
         strValue.clear();
         strValue << sm[4];
-        strValue >> tile->compressedLength;
+        strValue >> tile->compressed_length;
 
         /* Put all the data in a vector */
-        std::vector<unsigned char> dataVector(layerContent.begin() + currentIndex, layerContent.begin() + currentIndex + tile->compressedLength);
+        std::vector<unsigned char> dataVector(layerContent.begin() + currentIndex, layerContent.begin() + currentIndex + tile->compressed_length);
         const uint8_t *dataVectorPointer = dataVector.data();
         /* Allocate memory for the output */
-        std::unique_ptr<uint8_t[]> output = std::make_unique<uint8_t[]>(tile->decompressedLength);
+        std::unique_ptr<uint8_t[]> output = std::make_unique<uint8_t[]>(tile->decompressed_length);
 
         /* Now... the first byte of this dataVector is actually an indicator of compression */
         /* As follows: */
         /* 0 -> No compression, the data is actually raw! */
         /* 1 -> The data was compressed using LZF */
         /* TODO: Actually implement a check to see this byte!!! */
-        lzff_decompress(dataVectorPointer + 1, tile->compressedLength, output.get(), tile->decompressedLength);
+        _lzff_decompress(dataVectorPointer + 1, tile->compressed_length, output.get(), tile->decompressed_length);
 
         /* TODO: Krita might also normalize the colors in some way */
         /* This needs to be check and if present, the colors need to be denormalized */
@@ -558,7 +558,7 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
         /* R1, G1, B1, A1, R2, G2, ... etc */
         /* We'll just sort this here!*/
         /* TODO: Sometimes there won't be any alpha channel when it is RGB instead of RGBA. */
-        std::unique_ptr<uint8_t[]> sortedOutput = std::make_unique<uint8_t[]>(tile->decompressedLength);
+        std::unique_ptr<uint8_t[]> sortedOutput = std::make_unique<uint8_t[]>(tile->decompressed_length);
         int jj = 0;
         int tileArea = tile->tile_height * tile->tile_width;
         for (int i = 0; i < tileArea; i++)
@@ -576,7 +576,7 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
         printf("(Parsing Document) Tile properties (Tile Header) are extracted and have following values:\n");
         printf("(Parsing Document)  	>> left = %i\n", tile->left);
         printf("(Parsing Document)  	>> top = %i\n", tile->top);
-        printf("(Parsing Document)  	>> compressedLength = %i\n", tile->compressedLength);
+        printf("(Parsing Document)  	>> compressed_length = %i\n", tile->compressed_length);
         printf("(Parsing Document)  	>> DATA START\n");
         int j = 0;
         for (int i = 0; i < 256; i++)
@@ -593,7 +593,7 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
 
         /* Add the compressedLength to the currentIndex so the next tile starts at the correct position */
         // Needs to be done BEFORE moving the pointer's ownership to the vector!
-        currentIndex += tile->compressedLength;
+        currentIndex += tile->compressed_length;
 
         tiles.push_back(std::move(tile));
     }
@@ -604,11 +604,11 @@ std::vector<std::unique_ptr<KraTile>> KraFile::ParseTiles(std::vector<unsigned c
 // ---------------------------------------------------------------------------------------------------------------------
 // Extract a header element and match it with the element name.
 // ---------------------------------------------------------------------------------------------------------------------
-unsigned int KraFile::ParseHeaderElement(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex)
+unsigned int KraFile::_parse_header_element(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex)
 {
     unsigned int elementIntValue = -1;
     /* First extract the header element */
-    std::string elementValue = GetHeaderElement(layerContent, currentIndex);
+    std::string elementValue = _get_header_element(layerContent, currentIndex);
     /* Try to match the elementValue string */
     if (elementValue.find(elementName) != std::string::npos)
     {
@@ -630,7 +630,7 @@ unsigned int KraFile::ParseHeaderElement(std::vector<unsigned char> layerContent
 // ---------------------------------------------------------------------------------------------------------------------
 // Extract a header element starting from the currentIndex until the next "0x0A".
 // ---------------------------------------------------------------------------------------------------------------------
-std::string KraFile::GetHeaderElement(std::vector<unsigned char> layerContent, unsigned int &currentIndex)
+std::string KraFile::_get_header_element(std::vector<unsigned char> layerContent, unsigned int &currentIndex)
 {
     unsigned int startIndex = currentIndex;
     /* Just go through the vector until you encounter "0x0A" (= the hex value of Line Feed) */
@@ -658,7 +658,7 @@ std::string KraFile::GetHeaderElement(std::vector<unsigned char> layerContent, u
 // Extract the data content of the current file in the ZIP archive to a vector.
 // ---------------------------------------------------------------------------------------------------------------------
 
-int KraFile::extractCurrentFileToVector(std::vector<unsigned char> &resultVector, unzFile &m_zf)
+int KraFile::_extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf)
 {
     size_t errorCode = UNZ_ERRNO;
     unz_file_info64 file_info = {0};
@@ -697,7 +697,7 @@ int KraFile::extractCurrentFileToVector(std::vector<unsigned char> &resultVector
 // Decompression function for LZF copied directly (with minor modifications) from the Krita codebase (libs\image\tiles3\swap\kis_lzf_compression.cpp).
 // ---------------------------------------------------------------------------------------------------------------------
 
-int KraFile::lzff_decompress(const void *input, int length, void *output, int maxout)
+int KraFile::_lzff_decompress(const void *input, int length, void *output, int maxout)
 {
     const unsigned char *ip = (const unsigned char *)input;
     const unsigned char *ip_limit = ip + length - 1;

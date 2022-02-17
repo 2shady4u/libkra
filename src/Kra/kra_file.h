@@ -34,18 +34,18 @@
 class KraFile
 {
 private:
-	unsigned int ParseUIntAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
-	const char *ParseCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
-	const wchar_t *ParseWCharAttribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
+	unsigned int _parse_uint_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
+	const char *_parse_char_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
+	const wchar_t *_parse_wchar_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
 
-	std::vector<std::unique_ptr<KraLayer>> ParseLayers(tinyxml2::XMLElement *xmlElement);
-	std::vector<std::unique_ptr<KraTile>> ParseTiles(std::vector<unsigned char> layerContent);
+	std::vector<std::unique_ptr<KraLayer>> _parse_layers(tinyxml2::XMLElement *xmlElement);
+	std::vector<std::unique_ptr<KraTile>> _parse_tiles(std::vector<unsigned char> layerContent);
 
-	unsigned int ParseHeaderElement(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex);
-	std::string GetHeaderElement(std::vector<unsigned char> layerContent, unsigned int &currentIndex);
+	unsigned int _parse_header_element(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex);
+	std::string _get_header_element(std::vector<unsigned char> layerContent, unsigned int &currentIndex);
 
-	int extractCurrentFileToVector(std::vector<unsigned char> &resultVector, unzFile &m_zf);
-	int lzff_decompress(const void *input, int length, void *output, int maxout);
+	int _extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf);
+	int _lzff_decompress(const void *input, int length, void *output, int maxout);
 
 public:
 	unsigned int width;
@@ -60,7 +60,7 @@ public:
 
 	void load(const std::wstring &p_path);
 	std::unique_ptr<KraExportedLayer> get_exported_layer(int p_layer_index);
-	std::vector<std::unique_ptr<KraExportedLayer>> CreateKraExportLayers();
+	std::vector<std::unique_ptr<KraExportedLayer>> get_all_exported_layers();
 };
 
 #endif // KRA_FILE_H

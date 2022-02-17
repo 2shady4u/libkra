@@ -31,17 +31,17 @@ public:
     int32_t top;
 
     // Number of compressed bytes that represent the tile data.
-    int compressedLength;
+    int compressed_length;
     // Number of decompressed bytes that represent the tile data.
-    // Always equal to tileHeight * tileWidth * pixelSize
-    int decompressedLength;
+    // Always equal to tile_height * tile_width * pixel_size
+    int decompressed_length;
 
     // Decompressed image data of this tile.
     std::unique_ptr<uint8_t[]> data;
 
     // Flag that gets raised when something goes wrong when parsing the data.
     // CURRENTLY UNUSED!
-    bool corruptionFlag = false;
+    bool corruption_flag = false;
 };
 
 #endif // KRA_TILE_H
