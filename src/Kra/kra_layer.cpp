@@ -37,7 +37,31 @@ void KraPaintLayer::import_attributes(const tinyxml2::XMLElement *p_xml_element)
 
 void KraGroupLayer::import_attributes(const tinyxml2::XMLElement *p_xml_element)
 {
-     KraLayer::import_attributes(p_xml_element);
+    KraLayer::import_attributes(p_xml_element);
+}
+
+void KraLayer::print_layer_attributes() const
+{
+    printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", name.c_str());
+    printf("(Parsing Document)  	>> filename = %s\n", filename.c_str());
+    printf("(Parsing Document)  	>> name = %s\n", name.c_str());
+    printf("(Parsing Document)  	>> uuid = %s\n", uuid.c_str());
+    printf("(Parsing Document)  	>> channel_count = %i\n", channel_count);
+    printf("(Parsing Document)  	>> x = %i\n", x);
+    printf("(Parsing Document)  	>> y = %i\n", y);
+    printf("(Parsing Document)  	>> opacity = %i\n", opacity);
+    printf("(Parsing Document)  	>> visible = %s\n", visible ? "true" : "false");
+    printf("(Parsing Document)  	>> type = %i\n", get_type());
+}
+
+void KraPaintLayer::print_layer_attributes() const
+{
+    KraLayer::print_layer_attributes();
+}
+
+void KraGroupLayer::print_layer_attributes() const
+{
+    KraLayer::print_layer_attributes();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

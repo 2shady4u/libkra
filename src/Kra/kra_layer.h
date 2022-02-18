@@ -47,6 +47,7 @@ public:
     virtual void parse_tiles(std::vector<unsigned char> layerContent) = 0;
     virtual void import_attributes(const tinyxml2::XMLElement *p_xml_element);
 
+    virtual void print_layer_attributes() const;
     virtual KraLayerType get_type() const = 0;
     virtual ~KraLayer() = default;
 };
@@ -62,6 +63,7 @@ public:
     void parse_tiles(std::vector<unsigned char> layerContent);
     void import_attributes(const tinyxml2::XMLElement *p_xml_element) override;
 
+    void print_layer_attributes() const override;
     KraLayerType get_type() const override
     {
         return KraLayerType::PAINT_LAYER;
@@ -75,6 +77,7 @@ public:
 
     void import_attributes(const tinyxml2::XMLElement *p_xml_element) override;
 
+    void print_layer_attributes() const override;
     KraLayerType get_type() const override
     {
         return KraLayerType::GROUP_LAYER;

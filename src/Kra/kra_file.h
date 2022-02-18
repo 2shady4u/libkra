@@ -37,6 +37,12 @@ private:
 	int _extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf);
 
 public:
+	enum VerbosityLevel
+	{
+		QUIET,
+		VERBOSE
+	};
+
 	std::string name;
 
 	unsigned int channel_count;
@@ -45,7 +51,9 @@ public:
 
 	std::vector<std::unique_ptr<KraLayer>> layers;
 
-	bool corruptionFlag = false;
+	bool corruption_flag = false;
+
+	VerbosityLevel verbosity_level = VerbosityLevel::VERBOSE;
 
 	void load(const std::wstring &p_path);
 	std::unique_ptr<KraExportedLayer> get_exported_layer(int p_layer_index);

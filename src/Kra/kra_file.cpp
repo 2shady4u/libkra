@@ -338,16 +338,10 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
         std::unique_ptr<KraLayer> layer = std::make_unique<KraPaintLayer>();
         layer->import_attributes(layer_node);
 
-        printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", layer->name.c_str());
-        printf("(Parsing Document)  	>> filename = %s\n", layer->filename.c_str());
-        printf("(Parsing Document)  	>> name = %s\n", layer->name.c_str());
-        printf("(Parsing Document)  	>> uuid = %s\n", layer->uuid.c_str());
-        printf("(Parsing Document)  	>> channel_count = %i\n", layer->channel_count);
-        printf("(Parsing Document)  	>> x = %i\n", layer->x);
-        printf("(Parsing Document)  	>> y = %i\n", layer->y);
-        printf("(Parsing Document)  	>> opacity = %i\n", layer->opacity);
-        printf("(Parsing Document)  	>> visible = %s\n", layer->visible ? "true" : "false");
-        printf("(Parsing Document)  	>> type = %i\n", layer->get_type());
+        if (verbosity_level == VERBOSE)
+        {
+            layer->print_layer_attributes();
+        }
 
         layers.push_back(std::move(layer));
 
