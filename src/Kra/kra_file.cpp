@@ -38,10 +38,10 @@ void KraFile::load(const std::wstring &p_path)
     tinyxml2::XMLElement *xmlElement = xmlDocument.FirstChildElement("DOC")->FirstChildElement("IMAGE");
 
     /* Get important document attributes from the XML-file */
-    width = _parse_uint_attribute(xmlElement, "width");
-    height = _parse_uint_attribute(xmlElement, "height");
-    name = _parse_char_attribute(xmlElement, "name");
-    const char *colorSpaceName = _parse_char_attribute(xmlElement, "colorspacename");
+    width = xmlElement->UnsignedAttribute("width", 0);
+    height = xmlElement->UnsignedAttribute("height", 0);
+    name = xmlElement->Attribute("name");
+    const char *colorSpaceName = xmlElement->Attribute("colorspacename");
     /* The color space defines the number of 'channels' */
     /* Each separate layer has its own color space in KRA, so not sure if this necessary... */
     if (strcmp(colorSpaceName, "RGBA") == 0)
@@ -70,7 +70,7 @@ void KraFile::load(const std::wstring &p_path)
     /* This also automatically decrypts the tile data */
     for (auto &layer : layers)
     {
-        if (layer->type == KraLayer::PAINT_LAYER)
+        if (layer->get_type() == KraLayer::PAINT_LAYER)
         {
             const std::string &layerPath = (std::string)name + "/layers/" + (std::string)layer->filename;
             std::vector<unsigned char> layerContent;
@@ -146,7 +146,7 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
 
         if (layer->tiles.size() == 0)
         {
-            printf("(Exporting Document) Exported Layer '%S' is empty... skipping!\n", exported_layer->name);
+            printf("(Exporting Document) Exported Layer '%s' is empty... skipping!\n", exported_layer->name.c_str());
         }
         else
         {
@@ -156,10 +156,7 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer(int p_layer_index)
             unsigned int numberOfRows = layerHeight / referenceTile->tile_height;
             size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressed_length;
 
-            std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exported_layer->name);
-            const char *cname = str.c_str();
-
-            printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", cname);
+            printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", exported_layer->name.c_str());
             printf("(Exporting Document)  	>> numberOfColumns = %i\n", numberOfColumns);
             printf("(Exporting Document)  	>> numberOfRows = %i\n", numberOfRows);
             printf("(Exporting Document)  	>> layerWidth = %i\n", layerWidth);
@@ -212,11 +209,9 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers(
     /* Go through all the layers and add them to the exportedLayers vector */
     for (auto const &layer : layers)
     {
-        if (layer->type != KraLayer::PAINT_LAYER)
+        if (layer->get_type() != KraLayer::PAINT_LAYER)
         {
-            std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(layer->name);
-            const char *cname = str.c_str();
-            printf("(Exporting Document) Ignoring non-exportable Layer '%s'\n", cname);
+            printf("(Exporting Document) Ignoring non-exportable Layer '%s'\n", layer->name.c_str());
         }
         else
         {
@@ -261,7 +256,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers(
 
             if (layer->tiles.size() == 0)
             {
-                printf("(Exporting Document) Exported Layer '%S' is empty... skipping!\n", exportedLayer->name);
+                printf("(Exporting Document) Exported Layer '%s' is empty... skipping!\n", exportedLayer->name.c_str());
                 continue;
             }
             /* Get a reference tile and extract the number of horizontal and vertical tiles */
@@ -270,10 +265,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers(
             unsigned int numberOfRows = layerHeight / referenceTile->tile_height;
             size_t composedDataSize = numberOfColumns * numberOfRows * referenceTile->decompressed_length;
 
-            std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(exportedLayer->name);
-            const char *cname = str.c_str();
-
-            printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", cname);
+            printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", exportedLayer->name.c_str());
             printf("(Exporting Document)  	>> numberOfColumns = %i\n", numberOfColumns);
             printf("(Exporting Document)  	>> numberOfRows = %i\n", numberOfRows);
             printf("(Exporting Document)  	>> layerWidth = %i\n", layerWidth);
@@ -319,68 +311,6 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers(
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Parses a XMLElement and extracts the UNSIGNED INT attribute value found at the attribute name.
-// ---------------------------------------------------------------------------------------------------------------------
-unsigned int KraFile::_parse_uint_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
-{
-    unsigned int attributeValue = -1;
-    const tinyxml2::XMLAttribute *attribute = xmlElement->FindAttribute(attributeName);
-    if (attribute == 0)
-    {
-        printf("(Parsing Document) WARNING: Missing XML attribute '%s'\n", attributeName);
-    }
-    else
-    {
-        const char *charValue = attribute->Value();
-        std::stringstream strValue;
-        strValue << charValue;
-        strValue >> attributeValue;
-    }
-    return attributeValue;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Parses a XMLElement and extracts the CONST CHAR* attribute value found at the attribute name.
-// ---------------------------------------------------------------------------------------------------------------------
-const char *KraFile::_parse_char_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
-{
-    const char *attributeValue;
-    const tinyxml2::XMLAttribute *attribute = xmlElement->FindAttribute(attributeName);
-    if (attribute == 0)
-    {
-        printf("(Parsing Document) WARNING: Missing XML attribute '%s'\n", attributeName);
-    }
-    else
-    {
-        attributeValue = attribute->Value();
-    }
-    return attributeValue;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Parses a XMLElement and extracts the CONST WCHAR_T* attribute value found at the attribute name.
-// ---------------------------------------------------------------------------------------------------------------------
-const wchar_t *KraFile::_parse_wchar_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName)
-{
-    const wchar_t *attributeValue;
-    const tinyxml2::XMLAttribute *attribute = xmlElement->FindAttribute(attributeName);
-    if (attribute == 0)
-    {
-        printf("(Parsing Document) WARNING: Missing XML attribute '%s'\n", attributeName);
-    }
-    else
-    {
-        const char *attributeChar = attribute->Value();
-        const size_t cSize = strlen(attributeChar) + 1;
-        wchar_t *attributeWChar = new wchar_t[cSize];
-        mbstowcs(attributeWChar, attributeChar, cSize);
-
-        attributeValue = attributeWChar;
-    }
-    return attributeValue;
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 // Go through the XML-file and extract all the layer properties.
 // ---------------------------------------------------------------------------------------------------------------------
 std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLElement *xmlElement)
@@ -394,7 +324,7 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
     while (layer_node != 0)
     {
         /* Check the type of the layer and proceed from there... */
-        const char *node_type = _parse_char_attribute(layer_node, "nodetype");
+        const char *node_type = layer_node->Attribute("nodetype");
         KraLayer::KraLayerType type;
         if (strcmp(node_type, "paintlayer") == 0)
         {
@@ -406,16 +336,9 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
         }
 
         std::unique_ptr<KraLayer> layer = std::make_unique<KraPaintLayer>();
-        /* Get important layer attributes from the XML-file */
-        layer->x = _parse_uint_attribute(layer_node, "x");
-        layer->y = _parse_uint_attribute(layer_node, "y");
-        layer->opacity = _parse_uint_attribute(layer_node, "opacity");
-        layer->visible = _parse_uint_attribute(layer_node, "visible");
+        layer->import_attributes(layer_node);
 
-        layer->name = _parse_wchar_attribute(layer_node, "name");
-        layer->filename = _parse_char_attribute(layer_node, "filename");
-        layer->uuid = _parse_char_attribute(layer_node, "uuid");
-        const char *colorSpaceName = _parse_char_attribute(layer_node, "colorspacename");
+        const char *colorSpaceName = layer_node->Attribute("colorspacename");
         /* The color space defines the number of 'channels' */
         /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
         if (strcmp(colorSpaceName, "RGBA") == 0)
@@ -431,16 +354,13 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
             layer->channel_count = 0u;
         }
 
-        std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(layer->name);
-        const char *cname = str.c_str();
-
-        printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", cname);
-        printf("(Parsing Document)  	>> name = %s\n", cname);
-        printf("(Parsing Document)  	>> filename = %s\n", layer->filename);
-        printf("(Parsing Document)  	>> uuid = %s\n", layer->uuid);
+        printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", layer->name.c_str());
+        printf("(Parsing Document)  	>> name = %s\n", layer->name.c_str());
+        printf("(Parsing Document)  	>> filename = %s\n", layer->filename.c_str());
+        printf("(Parsing Document)  	>> uuid = %s\n", layer->uuid.c_str());
         printf("(Parsing Document)  	>> channel_count = %i\n", layer->channel_count);
         printf("(Parsing Document)  	>> opacity = %i\n", layer->opacity);
-        printf("(Parsing Document)  	>> type = %i\n", layer->type);
+        printf("(Parsing Document)  	>> type = %i\n", layer->get_type());
         printf("(Parsing Document)  	>> visible = %s\n", layer->visible ? "true" : "false");
         printf("(Parsing Document)  	>> x = %i\n", layer->x);
         printf("(Parsing Document)  	>> y = %i\n", layer->y);

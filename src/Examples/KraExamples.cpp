@@ -13,7 +13,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // Here the data gets exported and saved as a png using the libpng library.
 // ---------------------------------------------------------------------------------------------------------------------
-bool writeImage(const wchar_t *filename, unsigned int width, unsigned int height, const uint8_t *data)
+bool writeImage(const char *filename, unsigned int width, unsigned int height, const uint8_t *data)
 {
 
 	bool success = true;
@@ -25,11 +25,8 @@ bool writeImage(const wchar_t *filename, unsigned int width, unsigned int height
 	unsigned int channelCount = 4;
 	int colorType = PNG_COLOR_TYPE_RGBA;
 
-	std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(filename);
-	const char *cFilename = str.c_str();
-
 	// Open file for writing (binary mode)
-	fp = fopen(cFilename, "wb");
+	fp = fopen(filename, "wb");
 	if (fp == NULL)
 	{
 		std::cout << "Could not open file " << filename << " for writing" << std::endl;
@@ -118,14 +115,13 @@ int ExampleReadKra(std::wstring rawFile)
 
 	for (auto const &layer : exportedLayers)
 	{
-		const wchar_t *layerName = layer->name;
 		unsigned int layerHeight = (unsigned int)(layer->bottom - layer->top);
 		unsigned int layerWidth = (unsigned int)(layer->right - layer->left);
 		// std::unique_ptr<uint8_t[]> data = std::move(layer->data);
 		/* Export the layer's data to a texture */
-		std::wstringstream ssFilename;
-		ssFilename << layerName;
-		ssFilename << L".png";
+		std::stringstream ssFilename;
+		ssFilename << layer->name;
+		ssFilename << ".png";
 		/* TODO: Add the actual exporting functionality here! */
 		writeImage(ssFilename.str().c_str(), layerWidth, layerHeight, layer->data.get());
 	}
@@ -139,7 +135,7 @@ static void show_usage(std::string name)
 			  << "\n"
 			  << "General options:\n"
 			  << "  -h, --help                       Display this help message.\n"
-			  << "  -s,--source <source>             Specify the KRA source file.\n";
+			  << "  -s, --source <source>             Specify the KRA source file.\n";
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

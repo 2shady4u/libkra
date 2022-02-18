@@ -13,7 +13,7 @@
 class KraExportedLayer
 {
 public:
-    const wchar_t *name;
+    std::string name;
 
     unsigned int channel_count;
     unsigned int x;

@@ -34,10 +34,6 @@
 class KraFile
 {
 private:
-	unsigned int _parse_uint_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
-	const char *_parse_char_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
-	const wchar_t *_parse_wchar_attribute(const tinyxml2::XMLElement *xmlElement, const char *attributeName);
-
 	std::vector<std::unique_ptr<KraLayer>> _parse_layers(tinyxml2::XMLElement *xmlElement);
 	std::vector<std::unique_ptr<KraTile>> _parse_tiles(std::vector<unsigned char> layerContent);
 

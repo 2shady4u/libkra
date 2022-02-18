@@ -10,7 +10,10 @@
 
 #include "kra_tile.h"
 
+#include "../tinyxml2/tinyxml2.h"
+
 #include <vector>
+#include <string>
 
 // KraLayer is a structure in which general properties for a KRA layer are stored.
 // The actual image data is found in the tiles vector.
@@ -23,10 +26,9 @@ public:
         GROUP_LAYER
     };
 
-    const wchar_t *name;
-    const char *filename;
-
-    const char *uuid;
+    std::string filename;
+    std::string name;
+    std::string uuid;
 
     unsigned int channel_count;
     unsigned int x;
@@ -34,12 +36,12 @@ public:
 
     uint8_t opacity;
 
-    KraLayerType type;
-    bool visible;
+    bool corruption_flag = false;
+    bool visible = true;
 
     std::vector<std::unique_ptr<KraTile>> tiles;
 
-    bool corruption_flag = false;
+    void import_attributes(const tinyxml2::XMLElement *p_xml_element);
 
     virtual KraLayerType get_type() const = 0;
     virtual ~KraLayer() = default;
