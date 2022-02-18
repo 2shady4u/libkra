@@ -320,30 +320,32 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
     const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
 
     /* Hopefully we find something... otherwise there are no layers! */
-    /* Keep trying to find a layer until we can't any new ones! */
+    /* Keep trying to find a layer until we can't find any new ones! */
     while (layer_node != 0)
     {
         /* Check the type of the layer and proceed from there... */
-        const char *node_type = layer_node->Attribute("nodetype");
-        KraLayer::KraLayerType type;
-        if (strcmp(node_type, "paintlayer") == 0)
+        std::string node_type = layer_node->Attribute("nodetype");
+        std::unique_ptr<KraLayer> layer;
+        if (node_type == "paintlayer" || node_type == "grouplayer")
         {
-            type = KraLayer::PAINT_LAYER;
-        }
-        else if (strcmp(node_type, "grouplayer") == 0)
-        {
-            type = KraLayer::GROUP_LAYER;
-        }
+            if (node_type == "paintlayer")
+            {
+                layer = std::make_unique<KraPaintLayer>();
+            }
+            else
+            {
+                layer = std::make_unique<KraGroupLayer>();
+            }
 
-        std::unique_ptr<KraLayer> layer = std::make_unique<KraPaintLayer>();
-        layer->import_attributes(layer_node);
+            layer->import_attributes(layer_node);
 
-        if (verbosity_level == VERBOSE)
-        {
-            layer->print_layer_attributes();
+            if (verbosity_level == VERBOSE)
+            {
+                layer->print_layer_attributes();
+            }
+
+            layers.push_back(std::move(layer));
         }
-
-        layers.push_back(std::move(layer));
 
         /* Try to get the next layer entry... if not available break */
         const tinyxml2::XMLNode *nextSibling = layer_node->NextSibling();

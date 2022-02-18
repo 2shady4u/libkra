@@ -75,6 +75,7 @@ class KraGroupLayer : public KraLayer
 public:
     std::vector<std::unique_ptr<KraLayer>> children;
 
+    void parse_tiles(std::vector<unsigned char> layerContent);
     void import_attributes(const tinyxml2::XMLElement *p_xml_element) override;
 
     void print_layer_attributes() const override;

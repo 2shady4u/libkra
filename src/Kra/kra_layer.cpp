@@ -38,6 +38,41 @@ void KraPaintLayer::import_attributes(const tinyxml2::XMLElement *p_xml_element)
 void KraGroupLayer::import_attributes(const tinyxml2::XMLElement *p_xml_element)
 {
     KraLayer::import_attributes(p_xml_element);
+
+    const tinyxml2::XMLElement *layers_element = p_xml_element->FirstChildElement("layers");
+    const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
+
+    while (layer_node != 0)
+    {
+        /* Check the type of the layer and proceed from there... */
+        std::string node_type = layer_node->Attribute("nodetype");
+        std::unique_ptr<KraLayer> layer;
+        if (node_type == "paintlayer" || node_type == "grouplayer")
+        {
+            if (node_type == "paintlayer")
+            {
+                layer = std::make_unique<KraPaintLayer>();
+            }
+            else
+            {
+                layer = std::make_unique<KraGroupLayer>();
+            }
+
+            layer->import_attributes(layer_node);
+            children.push_back(std::move(layer));
+        }
+
+        /* Try to get the next layer entry... if not available break */
+        const tinyxml2::XMLNode *nextSibling = layer_node->NextSibling();
+        if (nextSibling == 0)
+        {
+            break;
+        }
+        else
+        {
+            layer_node = nextSibling->ToElement();
+        }
+    }
 }
 
 void KraLayer::print_layer_attributes() const
@@ -62,6 +97,16 @@ void KraPaintLayer::print_layer_attributes() const
 void KraGroupLayer::print_layer_attributes() const
 {
     KraLayer::print_layer_attributes();
+
+    printf("(Parsing Document)  	>> my children are:\n");
+    for(const auto &layer : children)
+    {
+        printf("(Parsing Document)  	>> '%s'\n", layer->name.c_str());
+    }
+}
+
+void KraGroupLayer::parse_tiles(std::vector<unsigned char> layerContent)
+{
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
