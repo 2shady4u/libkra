@@ -386,23 +386,36 @@ const wchar_t *KraFile::_parse_wchar_attribute(const tinyxml2::XMLElement *xmlEl
 std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLElement *xmlElement)
 {
     std::vector<std::unique_ptr<KraLayer>> layers;
-    const tinyxml2::XMLElement *layersElement = xmlElement->FirstChildElement("layers");
-    const tinyxml2::XMLElement *layerNode = layersElement->FirstChild()->ToElement();
+    const tinyxml2::XMLElement *layers_element = xmlElement->FirstChildElement("layers");
+    const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
 
     /* Hopefully we find something... otherwise there are no layers! */
     /* Keep trying to find a layer until we can't any new ones! */
-    while (layerNode != 0)
+    while (layer_node != 0)
     {
-        std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
-        /* Get important layer attributes from the XML-file */
-        layer->x = _parse_uint_attribute(layerNode, "x");
-        layer->y = _parse_uint_attribute(layerNode, "y");
-        layer->opacity = _parse_uint_attribute(layerNode, "opacity");
-        layer->visible = _parse_uint_attribute(layerNode, "visible");
+        /* Check the type of the layer and proceed from there... */
+        const char *node_type = _parse_char_attribute(layer_node, "nodetype");
+        KraLayer::KraLayerType type;
+        if (strcmp(node_type, "paintlayer") == 0)
+        {
+            type = KraLayer::PAINT_LAYER;
+        }
+        else if (strcmp(node_type, "grouplayer") == 0)
+        {
+            type = KraLayer::GROUP_LAYER;
+        }
 
-        layer->name = _parse_wchar_attribute(layerNode, "name");
-        layer->filename = _parse_char_attribute(layerNode, "filename");
-        const char *colorSpaceName = _parse_char_attribute(layerNode, "colorspacename");
+        std::unique_ptr<KraLayer> layer = std::make_unique<KraPaintLayer>();
+        /* Get important layer attributes from the XML-file */
+        layer->x = _parse_uint_attribute(layer_node, "x");
+        layer->y = _parse_uint_attribute(layer_node, "y");
+        layer->opacity = _parse_uint_attribute(layer_node, "opacity");
+        layer->visible = _parse_uint_attribute(layer_node, "visible");
+
+        layer->name = _parse_wchar_attribute(layer_node, "name");
+        layer->filename = _parse_char_attribute(layer_node, "filename");
+        layer->uuid = _parse_char_attribute(layer_node, "uuid");
+        const char *colorSpaceName = _parse_char_attribute(layer_node, "colorspacename");
         /* The color space defines the number of 'channels' */
         /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
         if (strcmp(colorSpaceName, "RGBA") == 0)
@@ -418,32 +431,13 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
             layer->channel_count = 0u;
         }
 
-        const char *nodeType = _parse_char_attribute(layerNode, "nodetype");
-        /* The color space defines the number of 'channels' */
-        /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
-        if (strcmp(nodeType, "paintlayer") == 0)
-        {
-            layer->type = KraLayer::PAINT_LAYER;
-        }
-        else if (strcmp(nodeType, "vectorlayer") == 0)
-        {
-            layer->type = KraLayer::VECTOR_LAYER;
-        }
-        else if (strcmp(nodeType, "grouplayer") == 0)
-        {
-            layer->type = KraLayer::GROUP_LAYER;
-        }
-        else
-        {
-            layer->type = KraLayer::OTHER;
-        }
-
         std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(layer->name);
         const char *cname = str.c_str();
 
         printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", cname);
         printf("(Parsing Document)  	>> name = %s\n", cname);
         printf("(Parsing Document)  	>> filename = %s\n", layer->filename);
+        printf("(Parsing Document)  	>> uuid = %s\n", layer->uuid);
         printf("(Parsing Document)  	>> channel_count = %i\n", layer->channel_count);
         printf("(Parsing Document)  	>> opacity = %i\n", layer->opacity);
         printf("(Parsing Document)  	>> type = %i\n", layer->type);
@@ -454,14 +448,14 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
         layers.push_back(std::move(layer));
 
         /* Try to get the next layer entry... if not available break */
-        const tinyxml2::XMLNode *nextSibling = layerNode->NextSibling();
+        const tinyxml2::XMLNode *nextSibling = layer_node->NextSibling();
         if (nextSibling == 0)
         {
             break;
         }
         else
         {
-            layerNode = nextSibling->ToElement();
+            layer_node = nextSibling->ToElement();
         }
     }
 

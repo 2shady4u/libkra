@@ -114,7 +114,7 @@ int ExampleReadKra(std::wstring rawFile)
 		return 1;
 	}
 
-	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = document->CreateKraExportLayers();
+	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = document->get_all_exported_layers();
 
 	for (auto const &layer : exportedLayers)
 	{

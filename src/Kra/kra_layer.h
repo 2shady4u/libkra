@@ -19,14 +19,14 @@ class KraLayer
 public:
     enum KraLayerType
     {
-        OTHER,
         PAINT_LAYER,
-        VECTOR_LAYER,
         GROUP_LAYER
     };
 
     const wchar_t *name;
     const char *filename;
+
+    const char *uuid;
 
     unsigned int channel_count;
     unsigned int x;
@@ -40,6 +40,29 @@ public:
     std::vector<std::unique_ptr<KraTile>> tiles;
 
     bool corruption_flag = false;
+
+    virtual KraLayerType get_type() const = 0;
+    virtual ~KraLayer() = default;
+};
+
+class KraPaintLayer : public KraLayer
+{
+public:
+    KraLayerType get_type() const override
+    {
+        return KraLayerType::PAINT_LAYER;
+    };
+};
+
+class KraGroupLayer : public KraLayer
+{
+public:
+    std::vector<std::unique_ptr<KraLayer>> children;
+
+    KraLayerType get_type() const override
+    {
+        return KraLayerType::GROUP_LAYER;
+    };
 };
 
 #endif // KRA_LAYER_H
