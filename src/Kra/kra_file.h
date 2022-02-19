@@ -32,9 +32,7 @@
 class KraFile
 {
 private:
-	std::vector<std::unique_ptr<KraLayer>> _parse_layers(tinyxml2::XMLElement *xmlElement);
-
-	int _extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf);
+	std::vector<std::unique_ptr<KraLayer>> _parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement);
 
 public:
 	enum VerbosityLevel
@@ -53,7 +51,9 @@ public:
 
 	bool corruption_flag = false;
 
-	VerbosityLevel verbosity_level = VerbosityLevel::VERBOSE;
+	static VerbosityLevel verbosity_level;
+
+	static int extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf);
 
 	void load(const std::wstring &p_path);
 	std::unique_ptr<KraExportedLayer> get_exported_layer(int p_layer_index);

@@ -11,6 +11,7 @@
 #include "kra_tile.h"
 
 #include "../tinyxml2/tinyxml2.h"
+#include "../../zlib/contrib/minizip/unzip.h"
 
 #include <iostream>
 #include <sstream>
@@ -44,8 +45,8 @@ public:
 
     std::vector<std::unique_ptr<KraTile>> tiles;
 
-    virtual void parse_tiles(std::vector<unsigned char> layerContent) = 0;
-    virtual void import_attributes(const tinyxml2::XMLElement *p_xml_element);
+    virtual void parse_tiles(std::vector<unsigned char> p_content) = 0;
+    virtual void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
 
     virtual void print_layer_attributes() const;
     virtual KraLayerType get_type() const = 0;
@@ -60,8 +61,8 @@ private:
     int _lzff_decompress(const void *input, int length, void *output, int maxout);
 
 public:
-    void parse_tiles(std::vector<unsigned char> layerContent);
-    void import_attributes(const tinyxml2::XMLElement *p_xml_element) override;
+    void parse_tiles(std::vector<unsigned char> p_content);
+    void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element) override;
 
     void print_layer_attributes() const override;
     KraLayerType get_type() const override
@@ -75,8 +76,8 @@ class KraGroupLayer : public KraLayer
 public:
     std::vector<std::unique_ptr<KraLayer>> children;
 
-    void parse_tiles(std::vector<unsigned char> layerContent);
-    void import_attributes(const tinyxml2::XMLElement *p_xml_element) override;
+    void parse_tiles(std::vector<unsigned char> p_content);
+    void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element) override;
 
     void print_layer_attributes() const override;
     KraLayerType get_type() const override

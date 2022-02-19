@@ -1,5 +1,7 @@
 #include "kra_file.h"
 
+KraFile::VerbosityLevel KraFile::verbosity_level = KraFile::VERBOSE;
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Create a KRA Document which contains document properties and a vector of KraLayer-pointers.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -30,18 +32,18 @@ void KraFile::load(const std::wstring &p_path)
     }
 
     std::vector<unsigned char> resultVector;
-    _extract_current_file_to_vector(resultVector, m_zf);
+    extract_current_file_to_vector(resultVector, m_zf);
     /* Put the vector into a string and parse it using tinyXML2 */
     std::string xmlString(resultVector.begin(), resultVector.end());
-    tinyxml2::XMLDocument xmlDocument;
-    xmlDocument.Parse(xmlString.c_str());
-    tinyxml2::XMLElement *xmlElement = xmlDocument.FirstChildElement("DOC")->FirstChildElement("IMAGE");
+    tinyxml2::XMLDocument xml_document;
+    xml_document.Parse(xmlString.c_str());
+    tinyxml2::XMLElement *xml_element = xml_document.FirstChildElement("DOC")->FirstChildElement("IMAGE");
 
     /* Get important document attributes from the XML-file */
-    width = xmlElement->UnsignedAttribute("width", 0);
-    height = xmlElement->UnsignedAttribute("height", 0);
-    name = xmlElement->Attribute("name");
-    const char *colorSpaceName = xmlElement->Attribute("colorspacename");
+    width = xml_element->UnsignedAttribute("width", 0);
+    height = xml_element->UnsignedAttribute("height", 0);
+    name = xml_element->Attribute("name");
+    const char *colorSpaceName = xml_element->Attribute("colorspacename");
     /* The color space defines the number of 'channels' */
     /* Each separate layer has its own color space in KRA, so not sure if this necessary... */
     if (strcmp(colorSpaceName, "RGBA") == 0)
@@ -63,31 +65,7 @@ void KraFile::load(const std::wstring &p_path)
     printf("(Parsing Document)  	>> channel_count = %i\n", channel_count);
 
     /* Parse all the layers registered in the maindoc.xml and add them to the document */
-    layers = _parse_layers(xmlElement);
-
-    /* Go through all the layers and initiate their tiles */
-    /* Only layers of the type paintlayer get their tiles parsed */
-    /* This also automatically decrypts the tile data */
-    for (auto &layer : layers)
-    {
-        if (layer->get_type() == KraLayer::PAINT_LAYER)
-        {
-            const std::string &layerPath = (std::string)name + "/layers/" + (std::string)layer->filename;
-            std::vector<unsigned char> layerContent;
-            const char *cLayerPath = layerPath.c_str();
-            int errorCode = unzLocateFile(m_zf, cLayerPath, 1);
-            errorCode += _extract_current_file_to_vector(layerContent, m_zf);
-            if (errorCode == UNZ_OK)
-            {
-                /* Start extracting the tile data. */
-                layer->parse_tiles(layerContent);
-            }
-            else
-            {
-                printf("(Parsing Document) WARNING: Layer entry with path '%s' could not be found in KRA archive.\n", layerPath.c_str());
-            }
-        }
-    }
+    layers = _parse_layers(m_zf, xml_element);
 
     errorCode = unzClose(m_zf);
 }
@@ -313,7 +291,7 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers(
 // ---------------------------------------------------------------------------------------------------------------------
 // Go through the XML-file and extract all the layer properties.
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLElement *xmlElement)
+std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement)
 {
     std::vector<std::unique_ptr<KraLayer>> layers;
     const tinyxml2::XMLElement *layers_element = xmlElement->FirstChildElement("layers");
@@ -337,9 +315,9 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
                 layer = std::make_unique<KraGroupLayer>();
             }
 
-            layer->import_attributes(layer_node);
+            layer->import_attributes(p_file, layer_node);
 
-            if (verbosity_level == VERBOSE)
+            if (KraFile::verbosity_level == KraFile::VERBOSE)
             {
                 layer->print_layer_attributes();
             }
@@ -366,7 +344,7 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(tinyxml2::XMLEleme
 // Extract the data content of the current file in the ZIP archive to a vector.
 // ---------------------------------------------------------------------------------------------------------------------
 
-int KraFile::_extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf)
+int KraFile::extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf)
 {
     size_t errorCode = UNZ_ERRNO;
     unz_file_info64 file_info = {0};

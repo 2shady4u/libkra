@@ -167,6 +167,10 @@ int main(int argc, const char *argv[])
 				return 1;
 			}
 		}
+		else if ((arg == "-q") || (arg == "--quiet"))
+		{
+			KraFile::verbosity_level = KraFile::QUIET;
+		}
 		else
 		{
 			sources.push_back(argv[i]);
