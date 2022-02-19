@@ -5,6 +5,8 @@
 // See LICENSE in the project root for license information.
 // ############################################################################ #
 
+#include "../Kra/kra_utility.h"
+
 #include "../Kra/kra_file.h"
 #include "../Kra/kra_exported_layer.h"
 
@@ -169,7 +171,7 @@ int main(int argc, const char *argv[])
 		}
 		else if ((arg == "-q") || (arg == "--quiet"))
 		{
-			KraFile::verbosity_level = KraFile::QUIET;
+			kra::verbosity_level = kra::QUIET;
 		}
 		else
 		{

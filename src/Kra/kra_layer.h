@@ -8,7 +8,10 @@
 #ifndef KRA_LAYER_H
 #define KRA_LAYER_H
 
+#include "kra_utility.h"
+
 #include "kra_tile.h"
+#include "kra_exported_layer.h"
 
 #include "../tinyxml2/tinyxml2.h"
 #include "../../zlib/contrib/minizip/unzip.h"
@@ -45,8 +48,12 @@ public:
 
     std::vector<std::unique_ptr<KraTile>> tiles;
 
+    std::vector<std::unique_ptr<KraLayer>> children;
+
     virtual void parse_tiles(std::vector<unsigned char> p_content) = 0;
     virtual void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
+
+    std::unique_ptr<KraExportedLayer> get_exported_layer();
 
     virtual void print_layer_attributes() const;
     virtual KraLayerType get_type() const = 0;
@@ -74,7 +81,6 @@ public:
 class KraGroupLayer : public KraLayer
 {
 public:
-    std::vector<std::unique_ptr<KraLayer>> children;
 
     void parse_tiles(std::vector<unsigned char> p_content);
     void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element) override;

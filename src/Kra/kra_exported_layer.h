@@ -8,6 +8,8 @@
 #ifndef KRA_EXPORTED_LAYER_H
 #define KRA_EXPORTED_LAYER_H
 
+#include <string>
+
 // KraExportedLayer is a structure in which the decompressed binary data for the entire image is saved.
 // Needless to say... these structures can become quite big...
 class KraExportedLayer

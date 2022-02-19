@@ -8,6 +8,8 @@
 #ifndef KRA_FILE_H
 #define KRA_FILE_H
 
+#include "kra_utility.h"
+
 #include "kra_layer.h"
 #include "kra_exported_layer.h"
 
@@ -25,8 +27,6 @@
 #include <codecvt>
 #include <memory>
 
-#define WRITEBUFFERSIZE (8192)
-
 // KraTile is a structure in which the general properties of a KRA document/archive are stored.
 // Each KRA archive consists of one or more layers (stored in a vector) that contain actual data.
 class KraFile
@@ -35,12 +35,6 @@ private:
 	std::vector<std::unique_ptr<KraLayer>> _parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement);
 
 public:
-	enum VerbosityLevel
-	{
-		QUIET,
-		VERBOSE
-	};
-
 	std::string name;
 
 	unsigned int channel_count;
@@ -51,12 +45,11 @@ public:
 
 	bool corruption_flag = false;
 
-	static VerbosityLevel verbosity_level;
-
-	static int extract_current_file_to_vector(std::vector<unsigned char> &resultVector, unzFile &m_zf);
-
 	void load(const std::wstring &p_path);
-	std::unique_ptr<KraExportedLayer> get_exported_layer(int p_layer_index);
+
+	std::unique_ptr<KraExportedLayer> get_exported_layer_at(int p_layer_index);
+	std::unique_ptr<KraExportedLayer> get_exported_layer_with_uuid(std::string p_uuid);
+
 	std::vector<std::unique_ptr<KraExportedLayer>> get_all_exported_layers();
 };
 
