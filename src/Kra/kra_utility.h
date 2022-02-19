@@ -10,6 +10,12 @@
 
 namespace kra
 {
+    enum LayerType
+    {
+        PAINT_LAYER,
+        GROUP_LAYER
+    };
+
     enum VerbosityLevel
     {
         QUIET,

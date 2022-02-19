@@ -65,6 +65,8 @@ void KraFile::load(const std::wstring &p_path)
     /* Parse all the layers registered in the maindoc.xml and add them to the document */
     layers = _parse_layers(file, xml_element);
 
+    _create_layer_map();
+
     errorCode = unzClose(file);
 }
 
@@ -93,7 +95,6 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_at(int p_layer_ind
 // ---------------------------------------------------------------------------------------------------------------------
 std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers()
 {
-
     std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers;
 
     /* Go through all the layers and add them to the exportedLayers vector */
@@ -123,6 +124,26 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_with_uuid(std::str
     return exported_layer;
 }
 
+void KraFile::_create_layer_map()
+{
+    layer_map.clear();
+
+    for(auto const &layer : layers)
+    {
+        _add_layer_to_map(layer);
+    }
+}
+
+void KraFile::_add_layer_to_map(const std::unique_ptr<KraLayer> &layer)
+{
+    layer_map.insert({layer->uuid, layer});
+    /* Also add all the children to the map */
+    for(auto const &child : layer->children)
+    {
+        _add_layer_to_map(child);
+    }
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Go through the XML-file and extract all the layer properties.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -143,11 +164,11 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(unzFile p_file, ti
         {
             if (node_type == "paintlayer")
             {
-                layer->type = KraLayer::PAINT_LAYER;
+                layer->type = kra::PAINT_LAYER;
             }
             else
             {
-                layer->type = KraLayer::GROUP_LAYER;
+                layer->type = kra::GROUP_LAYER;
             }
 
             layer->import_attributes(p_file, layer_node);

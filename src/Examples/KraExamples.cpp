@@ -102,6 +102,39 @@ finalise:
 	return success;
 }
 
+void save_layer_to_image(const std::unique_ptr<KraExportedLayer> &layer)
+{
+	unsigned int layer_width = (unsigned int)(layer->right - layer->left);
+	unsigned int layer_height = (unsigned int)(layer->bottom - layer->top);
+	// std::unique_ptr<uint8_t[]> data = std::move(layer->data);
+	/* Export the layer's data to a texture */
+	std::stringstream ssFilename;
+	ssFilename << layer->name;
+	ssFilename << ".png";
+	/* TODO: Add the actual exporting functionality here! */
+	writeImage(ssFilename.str().c_str(), layer_width, layer_height, layer->data.get());
+}
+
+void process_layer(const std::unique_ptr<KraFile> &document, const std::unique_ptr<KraExportedLayer> &layer)
+{
+	switch (layer->type)
+	{
+	case kra::PAINT_LAYER:
+	{
+		save_layer_to_image(layer);
+		break;
+	}
+	case kra::GROUP_LAYER:
+		for (auto const &uuid : layer->child_uuids)
+		{
+			std::unique_ptr<KraExportedLayer> child = document->get_exported_layer_with_uuid(uuid);
+
+			process_layer(document, child);
+		}
+		break;
+	}
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 int ExampleReadKra(std::wstring rawFile)
@@ -113,19 +146,11 @@ int ExampleReadKra(std::wstring rawFile)
 		return 1;
 	}
 
-	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = document->get_all_exported_layers();
+	std::vector<std::unique_ptr<KraExportedLayer>> exported_layers = document->get_all_exported_layers();
 
-	for (auto const &layer : exportedLayers)
+	for (auto const &layer : exported_layers)
 	{
-		unsigned int layerHeight = (unsigned int)(layer->bottom - layer->top);
-		unsigned int layerWidth = (unsigned int)(layer->right - layer->left);
-		// std::unique_ptr<uint8_t[]> data = std::move(layer->data);
-		/* Export the layer's data to a texture */
-		std::stringstream ssFilename;
-		ssFilename << layer->name;
-		ssFilename << ".png";
-		/* TODO: Add the actual exporting functionality here! */
-		writeImage(ssFilename.str().c_str(), layerWidth, layerHeight, layer->data.get());
+		process_layer(document, layer);
 	}
 
 	return 0;

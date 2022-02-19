@@ -15,6 +15,8 @@
 class KraExportedLayer
 {
 public:
+    kra::LayerType type;
+
     std::string name;
 
     unsigned int channel_count;
@@ -31,6 +33,8 @@ public:
     bool visible;
 
     std::unique_ptr<uint8_t[]> data;
+
+    std::vector<std::string> child_uuids;
 };
 
 #endif // KRA_EXPORTED_LAYER_H

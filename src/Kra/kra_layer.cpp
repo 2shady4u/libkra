@@ -17,10 +17,10 @@ void KraLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_
 
     switch (type)
     {
-    case PAINT_LAYER:
+    case kra::PAINT_LAYER:
         _import_paint_attributes(p_file, p_xml_element);
         break;
-    case GROUP_LAYER:
+    case kra::GROUP_LAYER:
         _import_group_attributes(p_file, p_xml_element);
         break;
     }
@@ -77,11 +77,11 @@ void KraLayer::_import_group_attributes(unzFile &p_file, const tinyxml2::XMLElem
         {
             if (node_type == "paintlayer")
             {
-                layer->type = KraLayer::PAINT_LAYER;
+                layer->type = kra::PAINT_LAYER;
             }
             else
             {
-                layer->type = KraLayer::GROUP_LAYER;
+                layer->type = kra::GROUP_LAYER;
             }
 
             layer->import_attributes(p_file, layer_node);
@@ -122,7 +122,7 @@ void KraLayer::print_layer_attributes() const
 
     switch (type)
     {
-    case GROUP_LAYER:
+    case kra::GROUP_LAYER:
         _print_group_layer_attributes();
         break;
     }
@@ -148,6 +148,7 @@ std::unique_ptr<KraExportedLayer> KraLayer::get_exported_layer()
     exported_layer->y = y;
     exported_layer->opacity = opacity;
     exported_layer->visible = visible;
+    exported_layer->type = type;
 
     /* Initialize the extents of this layer to 0 */
     exported_layer->left = 0;
@@ -155,79 +156,92 @@ std::unique_ptr<KraExportedLayer> KraLayer::get_exported_layer()
     exported_layer->top = 0;
     exported_layer->bottom = 0;
 
-    /* find the extents of the layer canvas */
-    for (auto const &tile : tiles)
+    switch (type)
     {
-        if (tile->left < exported_layer->left)
-        {
-            exported_layer->left = tile->left;
-        }
-        if (tile->left + (int32_t)tile->tile_width > exported_layer->right)
-        {
-            exported_layer->right = tile->left + (int32_t)tile->tile_width;
-        }
-
-        if (tile->top < exported_layer->top)
-        {
-            exported_layer->top = tile->top;
-        }
-        if (tile->top + (int32_t)tile->tile_height > exported_layer->bottom)
-        {
-            exported_layer->bottom = tile->top + (int32_t)tile->tile_height;
-        }
-    }
-    unsigned int layer_width = (unsigned int)(exported_layer->right - exported_layer->left);
-    unsigned int layer_height = (unsigned int)(exported_layer->bottom - exported_layer->top);
-
-    if (tiles.size() == 0)
+    case kra::PAINT_LAYER:
     {
-        printf("(Exporting Document) Exported Layer '%s' is empty... skipping!\n", exported_layer->name.c_str());
-    }
-    else
-    {
-        /* Get a reference tile and extract the number of horizontal and vertical tiles */
-        std::unique_ptr<KraTile> &referenceTile = tiles[0];
-        unsigned int numberOfColumns = layer_width / referenceTile->tile_width;
-        unsigned int numberOfRows = layer_height / referenceTile->tile_height;
-        size_t composed_data_size = numberOfColumns * numberOfRows * referenceTile->decompressed_length;
-
-        printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", exported_layer->name.c_str());
-        printf("(Exporting Document)  	>> numberOfColumns = %i\n", numberOfColumns);
-        printf("(Exporting Document)  	>> numberOfRows = %i\n", numberOfRows);
-        printf("(Exporting Document)  	>> layerWidth = %i\n", layer_width);
-        printf("(Exporting Document)  	>> layerHeight = %i\n", layer_height);
-        printf("(Exporting Document)  	>> top = %i\n", exported_layer->top);
-        printf("(Exporting Document)  	>> bottom = %i\n", exported_layer->bottom);
-        printf("(Exporting Document)  	>> left = %i\n", exported_layer->left);
-        printf("(Exporting Document)  	>> right = %i\n", exported_layer->right);
-        printf("(Exporting Document)  	>> composedDataSize = %i\n", static_cast<int>(composed_data_size));
-
-        /* Allocate space for the output data! */
-
-        std::unique_ptr<uint8_t[]> composed_data = std::make_unique<uint8_t[]>(composed_data_size);
-        /* I initialize all these elements to zero to avoid empty tiles from being filled with junk */
-        /* Problem might be that this takes quite a lot of time... */
-        /* TODO: Only the empty tiles should be initialized to zero! */
-
-        /* IMPORTANT: Not all the tiles exist! */
-        /* Empty tiles (containing full ALPHA) are not added as tiles! */
-        /* Now we have to construct the data in such a way that all tiles are in the correct positions */
+        /* find the extents of the layer canvas */
         for (auto const &tile : tiles)
         {
-            int currentNormalizedTop = tile->top - exported_layer->top;
-            int currentNormalizedLeft = tile->left - exported_layer->left;
-            for (int rowIndex = 0; rowIndex < (int)tile->tile_height; rowIndex++)
+            if (tile->left < exported_layer->left)
             {
-                uint8_t *destination = composed_data.get() + tile->pixel_size * tile->tile_width * rowIndex * numberOfColumns;
-                destination += tile->pixel_size * currentNormalizedLeft;
-                destination += tile->pixel_size * tile->tile_width * currentNormalizedTop * numberOfColumns;
-                uint8_t *source = tile->data.get() + tile->pixel_size * tile->tile_width * rowIndex;
-                size_t size = tile->pixel_size * tile->tile_width;
-                /* Copy the row of the tile to the composed image */
-                std::memcpy(destination, source, size);
+                exported_layer->left = tile->left;
+            }
+            if (tile->left + (int32_t)tile->tile_width > exported_layer->right)
+            {
+                exported_layer->right = tile->left + (int32_t)tile->tile_width;
+            }
+
+            if (tile->top < exported_layer->top)
+            {
+                exported_layer->top = tile->top;
+            }
+            if (tile->top + (int32_t)tile->tile_height > exported_layer->bottom)
+            {
+                exported_layer->bottom = tile->top + (int32_t)tile->tile_height;
             }
         }
-        exported_layer->data = std::move(composed_data);
+        unsigned int layer_width = (unsigned int)(exported_layer->right - exported_layer->left);
+        unsigned int layer_height = (unsigned int)(exported_layer->bottom - exported_layer->top);
+
+        if (tiles.size() == 0)
+        {
+            printf("(Exporting Document) Exported Layer '%s' is empty... skipping!\n", exported_layer->name.c_str());
+        }
+        else
+        {
+            /* Get a reference tile and extract the number of horizontal and vertical tiles */
+            std::unique_ptr<KraTile> &referenceTile = tiles[0];
+            unsigned int numberOfColumns = layer_width / referenceTile->tile_width;
+            unsigned int numberOfRows = layer_height / referenceTile->tile_height;
+            size_t composed_data_size = numberOfColumns * numberOfRows * referenceTile->decompressed_length;
+
+            printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", exported_layer->name.c_str());
+            printf("(Exporting Document)  	>> numberOfColumns = %i\n", numberOfColumns);
+            printf("(Exporting Document)  	>> numberOfRows = %i\n", numberOfRows);
+            printf("(Exporting Document)  	>> layerWidth = %i\n", layer_width);
+            printf("(Exporting Document)  	>> layerHeight = %i\n", layer_height);
+            printf("(Exporting Document)  	>> top = %i\n", exported_layer->top);
+            printf("(Exporting Document)  	>> bottom = %i\n", exported_layer->bottom);
+            printf("(Exporting Document)  	>> left = %i\n", exported_layer->left);
+            printf("(Exporting Document)  	>> right = %i\n", exported_layer->right);
+            printf("(Exporting Document)  	>> composedDataSize = %i\n", static_cast<int>(composed_data_size));
+
+            /* Allocate space for the output data! */
+
+            std::unique_ptr<uint8_t[]> composed_data = std::make_unique<uint8_t[]>(composed_data_size);
+            /* I initialize all these elements to zero to avoid empty tiles from being filled with junk */
+            /* Problem might be that this takes quite a lot of time... */
+            /* TODO: Only the empty tiles should be initialized to zero! */
+
+            /* IMPORTANT: Not all the tiles exist! */
+            /* Empty tiles (containing full ALPHA) are not added as tiles! */
+            /* Now we have to construct the data in such a way that all tiles are in the correct positions */
+            for (auto const &tile : tiles)
+            {
+                int currentNormalizedTop = tile->top - exported_layer->top;
+                int currentNormalizedLeft = tile->left - exported_layer->left;
+                for (int rowIndex = 0; rowIndex < (int)tile->tile_height; rowIndex++)
+                {
+                    uint8_t *destination = composed_data.get() + tile->pixel_size * tile->tile_width * rowIndex * numberOfColumns;
+                    destination += tile->pixel_size * currentNormalizedLeft;
+                    destination += tile->pixel_size * tile->tile_width * currentNormalizedTop * numberOfColumns;
+                    uint8_t *source = tile->data.get() + tile->pixel_size * tile->tile_width * rowIndex;
+                    size_t size = tile->pixel_size * tile->tile_width;
+                    /* Copy the row of the tile to the composed image */
+                    std::memcpy(destination, source, size);
+                }
+            }
+            exported_layer->data = std::move(composed_data);
+        }
+        break;
+    }
+    case kra::GROUP_LAYER:
+        for (auto const &child : children)
+        {
+            exported_layer->child_uuids.push_back(child->uuid);
+        }
+        break;
     }
 
     return exported_layer;

@@ -39,12 +39,7 @@ private:
     void _print_group_layer_attributes() const;
 
 public:
-    enum KraLayerType
-    {
-        PAINT_LAYER,
-        GROUP_LAYER
-    };
-    KraLayerType type;
+    kra::LayerType type;
 
     std::string filename;
     std::string name;

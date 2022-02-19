@@ -35,6 +35,9 @@ class KraFile
 private:
 	std::vector<std::unique_ptr<KraLayer>> _parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement);
 
+	void _create_layer_map();
+	void _add_layer_to_map(const std::unique_ptr<KraLayer> &layer);
+
 public:
 	std::string name;
 
@@ -46,7 +49,7 @@ public:
 
 	bool corruption_flag = false;
 
-	std::unordered_map<std::string, std::unique_ptr<KraLayer>> layer_map;
+	std::unordered_map<std::string, const std::unique_ptr<KraLayer>&> layer_map;
 
 	void load(const std::wstring &p_path);
 
