@@ -122,6 +122,8 @@ void KraLayer::print_layer_attributes() const
 
     switch (type)
     {
+    case kra::PAINT_LAYER:
+        break;
     case kra::GROUP_LAYER:
         _print_group_layer_attributes();
         break;
