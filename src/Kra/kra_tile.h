@@ -42,6 +42,8 @@ public:
     // Flag that gets raised when something goes wrong when parsing the data.
     // CURRENTLY UNUSED!
     bool corruption_flag = false;
+
+    void print_layer_attributes() const;
 };
 
 #endif // KRA_TILE_H

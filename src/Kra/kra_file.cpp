@@ -117,7 +117,8 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_with_uuid(std::str
 {
     std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
 
-
+    const std::unique_ptr<KraLayer> &layer = layer_map.at(p_uuid);
+    exported_layer = layer->get_exported_layer();
 
     return exported_layer;
 }
@@ -137,16 +138,16 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(unzFile p_file, ti
     {
         /* Check the type of the layer and proceed from there... */
         std::string node_type = layer_node->Attribute("nodetype");
-        std::unique_ptr<KraLayer> layer;
+        std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
         if (node_type == "paintlayer" || node_type == "grouplayer")
         {
             if (node_type == "paintlayer")
             {
-                layer = std::make_unique<KraPaintLayer>();
+                layer->type = KraLayer::PAINT_LAYER;
             }
             else
             {
-                layer = std::make_unique<KraGroupLayer>();
+                layer->type = KraLayer::GROUP_LAYER;
             }
 
             layer->import_attributes(p_file, layer_node);

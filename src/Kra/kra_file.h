@@ -26,6 +26,7 @@
 #include <locale>
 #include <codecvt>
 #include <memory>
+#include <unordered_map>
 
 // KraTile is a structure in which the general properties of a KRA document/archive are stored.
 // Each KRA archive consists of one or more layers (stored in a vector) that contain actual data.
@@ -44,6 +45,8 @@ public:
 	std::vector<std::unique_ptr<KraLayer>> layers;
 
 	bool corruption_flag = false;
+
+	std::unordered_map<std::string, std::unique_ptr<KraLayer>> layer_map;
 
 	void load(const std::wstring &p_path);
 

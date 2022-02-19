@@ -26,12 +26,25 @@
 // The actual image data is found in the tiles vector.
 class KraLayer
 {
+private:
+    void _parse_tiles(std::vector<unsigned char> p_content);
+
+    unsigned int _parse_header_element(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex);
+    std::string _get_header_element(std::vector<unsigned char> layerContent, unsigned int &currentIndex);
+    int _lzff_decompress(const void *input, int length, void *output, int maxout);
+
+    void _import_paint_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
+    void _import_group_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
+
+    void _print_group_layer_attributes() const;
+
 public:
     enum KraLayerType
     {
         PAINT_LAYER,
         GROUP_LAYER
     };
+    KraLayerType type;
 
     std::string filename;
     std::string name;
@@ -50,46 +63,11 @@ public:
 
     std::vector<std::unique_ptr<KraLayer>> children;
 
-    virtual void parse_tiles(std::vector<unsigned char> p_content) = 0;
-    virtual void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
+    void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
 
     std::unique_ptr<KraExportedLayer> get_exported_layer();
 
-    virtual void print_layer_attributes() const;
-    virtual KraLayerType get_type() const = 0;
-    virtual ~KraLayer() = default;
-};
-
-class KraPaintLayer : public KraLayer
-{
-private:
-    unsigned int _parse_header_element(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex);
-    std::string _get_header_element(std::vector<unsigned char> layerContent, unsigned int &currentIndex);
-    int _lzff_decompress(const void *input, int length, void *output, int maxout);
-
-public:
-    void parse_tiles(std::vector<unsigned char> p_content);
-    void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element) override;
-
-    void print_layer_attributes() const override;
-    KraLayerType get_type() const override
-    {
-        return KraLayerType::PAINT_LAYER;
-    };
-};
-
-class KraGroupLayer : public KraLayer
-{
-public:
-
-    void parse_tiles(std::vector<unsigned char> p_content);
-    void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element) override;
-
-    void print_layer_attributes() const override;
-    KraLayerType get_type() const override
-    {
-        return KraLayerType::GROUP_LAYER;
-    };
+    void print_layer_attributes() const;
 };
 
 #endif // KRA_LAYER_H

@@ -14,12 +14,20 @@ void KraLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_
     opacity = p_xml_element->UnsignedAttribute("opacity", 0);
 
     visible = p_xml_element->BoolAttribute("visible", true);
+
+    switch (type)
+    {
+    case PAINT_LAYER:
+        _import_paint_attributes(p_file, p_xml_element);
+        break;
+    case GROUP_LAYER:
+        _import_group_attributes(p_file, p_xml_element);
+        break;
+    }
 }
 
-void KraPaintLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+void KraLayer::_import_paint_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
 {
-    KraLayer::import_attributes(p_file, p_xml_element);
-
     const char *color_space_name = p_xml_element->Attribute("colorspacename");
     /* The color space defines the number of 'channels' */
     /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
@@ -47,7 +55,7 @@ void KraPaintLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElemen
     if (errorCode == UNZ_OK)
     {
         /* Start extracting the tile data. */
-        parse_tiles(layer_content);
+        _parse_tiles(layer_content);
     }
     else
     {
@@ -55,10 +63,8 @@ void KraPaintLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElemen
     }
 }
 
-void KraGroupLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+void KraLayer::_import_group_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
 {
-    KraLayer::import_attributes(p_file, p_xml_element);
-
     const tinyxml2::XMLElement *layers_element = p_xml_element->FirstChildElement("layers");
     const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
 
@@ -66,16 +72,16 @@ void KraGroupLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElemen
     {
         /* Check the type of the layer and proceed from there... */
         std::string node_type = layer_node->Attribute("nodetype");
-        std::unique_ptr<KraLayer> layer;
+        std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
         if (node_type == "paintlayer" || node_type == "grouplayer")
         {
             if (node_type == "paintlayer")
             {
-                layer = std::make_unique<KraPaintLayer>();
+                layer->type = KraLayer::PAINT_LAYER;
             }
             else
             {
-                layer = std::make_unique<KraGroupLayer>();
+                layer->type = KraLayer::GROUP_LAYER;
             }
 
             layer->import_attributes(p_file, layer_node);
@@ -112,27 +118,23 @@ void KraLayer::print_layer_attributes() const
     printf("(Parsing Document)  	>> y = %i\n", y);
     printf("(Parsing Document)  	>> opacity = %i\n", opacity);
     printf("(Parsing Document)  	>> visible = %s\n", visible ? "true" : "false");
-    printf("(Parsing Document)  	>> type = %i\n", get_type());
+    printf("(Parsing Document)  	>> type = %i\n", type);
+
+    switch (type)
+    {
+    case GROUP_LAYER:
+        _print_group_layer_attributes();
+        break;
+    }
 }
 
-void KraPaintLayer::print_layer_attributes() const
+void KraLayer::_print_group_layer_attributes() const
 {
-    KraLayer::print_layer_attributes();
-}
-
-void KraGroupLayer::print_layer_attributes() const
-{
-    KraLayer::print_layer_attributes();
-
     printf("(Parsing Document)  	>> my children are:\n");
     for (const auto &layer : children)
     {
         printf("(Parsing Document)  	>> '%s'\n", layer->name.c_str());
     }
-}
-
-void KraGroupLayer::parse_tiles(std::vector<unsigned char> layerContent)
-{
 }
 
 std::unique_ptr<KraExportedLayer> KraLayer::get_exported_layer()
@@ -234,7 +236,7 @@ std::unique_ptr<KraExportedLayer> KraLayer::get_exported_layer()
 // ---------------------------------------------------------------------------------------------------------------------
 // Extract the tile data and properties from the raw binary data.
 // ---------------------------------------------------------------------------------------------------------------------
-void KraPaintLayer::parse_tiles(std::vector<unsigned char> layerContent)
+void KraLayer::_parse_tiles(std::vector<unsigned char> layerContent)
 {
     /* This code works with a global pointer index that gets incremented depending on element size */
     /* currentIndex obviously starts at zero and will be passed by reference */
@@ -362,7 +364,7 @@ void KraPaintLayer::parse_tiles(std::vector<unsigned char> layerContent)
 // ---------------------------------------------------------------------------------------------------------------------
 // Extract a header element and match it with the element name.
 // ---------------------------------------------------------------------------------------------------------------------
-unsigned int KraPaintLayer::_parse_header_element(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex)
+unsigned int KraLayer::_parse_header_element(std::vector<unsigned char> layerContent, const std::string &elementName, unsigned int &currentIndex)
 {
     unsigned int elementIntValue = -1;
     /* First extract the header element */
@@ -388,7 +390,7 @@ unsigned int KraPaintLayer::_parse_header_element(std::vector<unsigned char> lay
 // ---------------------------------------------------------------------------------------------------------------------
 // Extract a header element starting from the currentIndex until the next "0x0A".
 // ---------------------------------------------------------------------------------------------------------------------
-std::string KraPaintLayer::_get_header_element(std::vector<unsigned char> layerContent, unsigned int &currentIndex)
+std::string KraLayer::_get_header_element(std::vector<unsigned char> layerContent, unsigned int &currentIndex)
 {
     unsigned int startIndex = currentIndex;
     /* Just go through the vector until you encounter "0x0A" (= the hex value of Line Feed) */
@@ -416,7 +418,7 @@ std::string KraPaintLayer::_get_header_element(std::vector<unsigned char> layerC
 // Decompression function for LZF copied directly (with minor modifications) from the Krita codebase (libs\image\tiles3\swap\kis_lzf_compression.cpp).
 // ---------------------------------------------------------------------------------------------------------------------
 
-int KraPaintLayer::_lzff_decompress(const void *input, int length, void *output, int maxout)
+int KraLayer::_lzff_decompress(const void *input, int length, void *output, int maxout)
 {
     const unsigned char *ip = (const unsigned char *)input;
     const unsigned char *ip_limit = ip + length - 1;
