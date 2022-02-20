@@ -53,10 +53,10 @@ public:
 
 	void load(const std::wstring &p_path);
 
-	std::unique_ptr<KraExportedLayer> get_exported_layer_at(int p_layer_index);
-	std::unique_ptr<KraExportedLayer> get_exported_layer_with_uuid(std::string p_uuid);
+	std::unique_ptr<KraExportedLayer> get_exported_layer_at(int p_layer_index) const;
+	std::unique_ptr<KraExportedLayer> get_exported_layer_with_uuid(const std::string &p_uuid) const;
 
-	std::vector<std::unique_ptr<KraExportedLayer>> get_all_exported_layers();
+	std::vector<std::unique_ptr<KraExportedLayer>> get_all_exported_layers() const;
 };
 
 #endif // KRA_FILE_H

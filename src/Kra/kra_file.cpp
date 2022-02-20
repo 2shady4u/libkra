@@ -71,9 +71,9 @@ void KraFile::load(const std::wstring &p_path)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Take a single layer and compose its tiles into something that can be used externally
+// Take a single layer, at a certain index, and get an exported version of this layer
 // ---------------------------------------------------------------------------------------------------------------------
-std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_at(int p_layer_index)
+std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_at(int p_layer_index) const
 {
     std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
 
@@ -91,9 +91,25 @@ std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_at(int p_layer_ind
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Get an exported version of the exact layer with the given uuid
+// ---------------------------------------------------------------------------------------------------------------------
+std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_with_uuid(const std::string &p_uuid) const
+{
+    std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
+
+    if(layer_map.find(p_uuid) != layer_map.end())
+    {
+        const std::unique_ptr<KraLayer> &layer = layer_map.at(p_uuid);
+        exported_layer = layer->get_exported_layer();
+    }
+
+    return exported_layer;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Take all the layers and their tiles and construct/compose the complete image!
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers()
+std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers() const
 {
     std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers;
 
@@ -111,23 +127,10 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers(
     return exportedLayers;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Get an exported version of the exact layer with the given uuid
-// ---------------------------------------------------------------------------------------------------------------------
-std::unique_ptr<KraExportedLayer> KraFile::get_exported_layer_with_uuid(std::string p_uuid)
-{
-    std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
-
-    const std::unique_ptr<KraLayer> &layer = layer_map.at(p_uuid);
-    exported_layer = layer->get_exported_layer();
-
-    return exported_layer;
-}
-
 void KraFile::_create_layer_map()
 {
     layer_map.clear();
-
+    /* Go through all the layers and add them to the map */
     for(auto const &layer : layers)
     {
         _add_layer_to_map(layer);
@@ -137,7 +140,7 @@ void KraFile::_create_layer_map()
 void KraFile::_add_layer_to_map(const std::unique_ptr<KraLayer> &layer)
 {
     layer_map.insert({layer->uuid, layer});
-    /* Also add all the children to the map */
+    /* Also add all the children of this layer to the map */
     for(auto const &child : layer->children)
     {
         _add_layer_to_map(child);
@@ -171,7 +174,7 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(unzFile p_file, ti
                 layer->type = kra::GROUP_LAYER;
             }
 
-            layer->import_attributes(p_file, layer_node);
+            layer->import_attributes(name, p_file, layer_node);
 
             if (kra::verbosity_level == kra::VERBOSE)
             {

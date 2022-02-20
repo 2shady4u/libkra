@@ -33,8 +33,8 @@ private:
     std::string _get_header_element(std::vector<unsigned char> layerContent, unsigned int &currentIndex);
     int _lzff_decompress(const void *input, int length, void *output, int maxout);
 
-    void _import_paint_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
-    void _import_group_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
+    void _import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
+    void _import_group_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
 
     void _print_group_layer_attributes() const;
 
@@ -58,7 +58,7 @@ public:
 
     std::vector<std::unique_ptr<KraLayer>> children;
 
-    void import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
+    void import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
 
     std::unique_ptr<KraExportedLayer> get_exported_layer();
 

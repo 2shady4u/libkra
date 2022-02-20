@@ -2,7 +2,7 @@
 // TODO: Should be removed at some point!
 #include "kra_file.h"
 
-void KraLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+void KraLayer::import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
 {
     /* Get important layer attributes from the XML-file */
     filename = p_xml_element->Attribute("filename");
@@ -18,15 +18,15 @@ void KraLayer::import_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_
     switch (type)
     {
     case kra::PAINT_LAYER:
-        _import_paint_attributes(p_file, p_xml_element);
+        _import_paint_attributes(p_name, p_file, p_xml_element);
         break;
     case kra::GROUP_LAYER:
-        _import_group_attributes(p_file, p_xml_element);
+        _import_group_attributes(p_name, p_file, p_xml_element);
         break;
     }
 }
 
-void KraLayer::_import_paint_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+void KraLayer::_import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
 {
     const char *color_space_name = p_xml_element->Attribute("colorspacename");
     /* The color space defines the number of 'channels' */
@@ -47,7 +47,7 @@ void KraLayer::_import_paint_attributes(unzFile &p_file, const tinyxml2::XMLElem
     /* Try and find the relevant file that defines this layer's tile data */
     /* This also automatically decrypts the tile data */
     /* The "Sample/"-folder is hard-coded as I have yet to encounter a case where this folder is named differently! */
-    const std::string &layer_path = "Sample/layers/" + filename;
+    const std::string &layer_path = p_name + "/layers/" + filename;
     std::vector<unsigned char> layer_content;
     const char *c_path = layer_path.c_str();
     int errorCode = unzLocateFile(p_file, c_path, 1);
@@ -63,7 +63,7 @@ void KraLayer::_import_paint_attributes(unzFile &p_file, const tinyxml2::XMLElem
     }
 }
 
-void KraLayer::_import_group_attributes(unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+void KraLayer::_import_group_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
 {
     const tinyxml2::XMLElement *layers_element = p_xml_element->FirstChildElement("layers");
     const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
@@ -84,7 +84,7 @@ void KraLayer::_import_group_attributes(unzFile &p_file, const tinyxml2::XMLElem
                 layer->type = kra::GROUP_LAYER;
             }
 
-            layer->import_attributes(p_file, layer_node);
+            layer->import_attributes(p_name, p_file, layer_node);
 
             if (kra::verbosity_level == kra::VERBOSE)
             {
