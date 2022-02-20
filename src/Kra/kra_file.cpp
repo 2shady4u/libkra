@@ -127,6 +127,9 @@ std::vector<std::unique_ptr<KraExportedLayer>> KraFile::get_all_exported_layers(
     return exportedLayers;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Create the layer_map as to easily find layers by their uuid
+// ---------------------------------------------------------------------------------------------------------------------
 void KraFile::_create_layer_map()
 {
     layer_map.clear();
@@ -137,6 +140,9 @@ void KraFile::_create_layer_map()
     }
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Recursively add all child layers (and those children's children) to the layer_map
+// ---------------------------------------------------------------------------------------------------------------------
 void KraFile::_add_layer_to_map(const std::unique_ptr<KraLayer> &layer)
 {
     layer_map.insert({layer->uuid, layer});
@@ -163,6 +169,7 @@ std::vector<std::unique_ptr<KraLayer>> KraFile::_parse_layers(unzFile p_file, ti
         /* Check the type of the layer and proceed from there... */
         std::string node_type = layer_node->Attribute("nodetype");
         std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
+        /* If it is not a paintlayer nor a grouplayer then we don't support it! */
         if (node_type == "paintlayer" || node_type == "grouplayer")
         {
             if (node_type == "paintlayer")

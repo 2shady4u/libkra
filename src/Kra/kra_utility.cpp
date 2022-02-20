@@ -8,15 +8,15 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     int extract_current_file_to_vector(unzFile &p_file, std::vector<unsigned char> &p_result)
     {
-        size_t errorCode = UNZ_ERRNO;
+        size_t error_code = UNZ_ERRNO;
         unz_file_info64 file_info = {0};
         char filename_inzip[256] = {0};
 
         /* Get the required size necessary to store the file content. */
-        errorCode = unzGetCurrentFileInfo64(p_file, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+        error_code = unzGetCurrentFileInfo64(p_file, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
         size_t uncompressed_size = file_info.uncompressed_size;
 
-        errorCode = unzOpenCurrentFile(p_file);
+        error_code = unzOpenCurrentFile(p_file);
 
         std::vector<unsigned char> buffer;
         buffer.resize(WRITEBUFFERSIZE);
@@ -27,18 +27,18 @@ namespace kra
         {
             /* Read the data in parts of size WRITEBUFFERSIZE */
             /* and keep reading until the function returns zero or lower. */
-            errorCode = unzReadCurrentFile(p_file, buffer.data(), (unsigned int)buffer.size());
-            if (errorCode < 0 || errorCode == 0)
+            error_code = unzReadCurrentFile(p_file, buffer.data(), (unsigned int)buffer.size());
+            if (error_code < 0 || error_code == 0)
                 break;
 
-            p_result.insert(p_result.end(), buffer.data(), buffer.data() + errorCode);
+            p_result.insert(p_result.end(), buffer.data(), buffer.data() + error_code);
 
-        } while (errorCode > 0);
+        } while (error_code > 0);
 
         /* Be sure to close the file to avoid leakage. */
-        errorCode = unzCloseCurrentFile(p_file);
+        error_code = unzCloseCurrentFile(p_file);
 
-        return (int)errorCode;
+        return (int)error_code;
     }
 
 };
