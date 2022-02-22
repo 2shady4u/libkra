@@ -1,6 +1,4 @@
 #include "kra_layer.h"
-// TODO: Should be removed at some point!
-#include "kra_file.h"
 
 void KraLayer::import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
 {

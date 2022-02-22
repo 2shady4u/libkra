@@ -5,8 +5,8 @@
 // See LICENSE in the project root for license information.
 // ############################################################################ #
 
-#ifndef KRA_FILE_H
-#define KRA_FILE_H
+#ifndef KRA_DOCUMENT_H
+#define KRA_DOCUMENT_H
 
 #include "kra_utility.h"
 
@@ -30,7 +30,7 @@
 
 // KraTile is a structure in which the general properties of a KRA document/archive are stored.
 // Each KRA archive consists of one or more layers (stored in a vector) that contain actual data.
-class KraFile
+class KraDocument
 {
 private:
 	std::vector<std::unique_ptr<KraLayer>> _parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement);
@@ -59,4 +59,4 @@ public:
 	std::vector<std::unique_ptr<KraExportedLayer>> get_all_exported_layers() const;
 };
 
-#endif // KRA_FILE_H
+#endif // KRA_DOCUMENT_H
