@@ -81,7 +81,7 @@ namespace kra
 
         if (p_layer_index < 0 || p_layer_index >= layers.size())
         {
-            // There should be some kind of error here
+            // TODO: There should be some kind of error here
         }
         else
         {

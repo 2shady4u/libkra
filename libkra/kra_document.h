@@ -30,7 +30,7 @@
 
 namespace kra
 {
-	// KraTile is a structure in which the general properties of a KRA document/archive are stored.
+	// KraDocument is a structure in which the general properties of a KRA document/archive are stored.
 	// Each KRA archive consists of one or more layers (stored in a vector) that contain actual data.
 	class KraDocument
 	{
