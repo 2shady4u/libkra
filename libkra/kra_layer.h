@@ -56,6 +56,15 @@ namespace kra
         bool corruption_flag = false;
         bool visible = true;
 
+        // Version statement of the layer, always equal to 2.
+        unsigned int version;
+        // Number of vertical pixels stored in each tile, always equal to 64.
+        unsigned int tile_height;
+        // Number of horizontal pixels stored in each tile, always equal to 64.
+        unsigned int tile_width;
+        // Number of elements in each pixel, is equal to 4 for RGBA.
+        unsigned int pixel_size;
+
         std::vector<std::unique_ptr<KraTile>> tiles;
 
         std::vector<std::unique_ptr<KraLayer>> children;

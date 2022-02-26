@@ -9,6 +9,7 @@
 #define KRA_TILE_H
 
 #include <memory>
+#include <vector>
 
 namespace kra
 {
@@ -17,15 +18,6 @@ namespace kra
     class KraTile
     {
     public:
-        // Version statement of the tile, always equal to 2.
-        unsigned int version;
-        // Number of vertical pixels stored in the tile, always equal to 64.
-        unsigned int tile_height;
-        // Number of horizontal pixels stored in the tile, always equal to 64.
-        unsigned int tile_width;
-        // Number of elements in each pixel, is equal to 4 for RGBA.
-        unsigned int pixel_size;
-
         // These can also be negative!!!
         // The left (X) position of the tile.
         int32_t left;
@@ -44,6 +36,8 @@ namespace kra
         // Flag that gets raised when something goes wrong when parsing the data.
         // CURRENTLY UNUSED!
         bool corruption_flag = false;
+
+        void import_attributes(const std::vector<unsigned char> &p_layer_content, unsigned int &p_index);
 
         void print_layer_attributes() const;
     };

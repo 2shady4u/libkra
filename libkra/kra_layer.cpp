@@ -169,18 +169,18 @@ namespace kra
                 {
                     exported_layer->left = tile->left;
                 }
-                if (tile->left + (int32_t)tile->tile_width > exported_layer->right)
+                if (tile->left + (int32_t)tile_width > exported_layer->right)
                 {
-                    exported_layer->right = tile->left + (int32_t)tile->tile_width;
+                    exported_layer->right = tile->left + (int32_t)tile_width;
                 }
 
                 if (tile->top < exported_layer->top)
                 {
                     exported_layer->top = tile->top;
                 }
-                if (tile->top + (int32_t)tile->tile_height > exported_layer->bottom)
+                if (tile->top + (int32_t)tile_height > exported_layer->bottom)
                 {
-                    exported_layer->bottom = tile->top + (int32_t)tile->tile_height;
+                    exported_layer->bottom = tile->top + (int32_t)tile_height;
                 }
             }
             unsigned int layer_width = (unsigned int)(exported_layer->right - exported_layer->left);
@@ -194,8 +194,8 @@ namespace kra
             {
                 /* Get a reference tile and extract the number of horizontal and vertical tiles */
                 std::unique_ptr<KraTile> &reference_tile = tiles[0];
-                unsigned int number_of_columns = layer_width / reference_tile->tile_width;
-                unsigned int number_of_rows = layer_height / reference_tile->tile_height;
+                unsigned int number_of_columns = layer_width / tile_width;
+                unsigned int number_of_rows = layer_height / tile_height;
                 size_t composed_data_size = number_of_columns * number_of_rows * reference_tile->decompressed_length;
 
                 printf("(Exporting Document) Exported Layer '%s' properties are extracted and have following values:\n", exported_layer->name.c_str());
@@ -223,13 +223,13 @@ namespace kra
                 {
                     int current_normalized_top = tile->top - exported_layer->top;
                     int current_normalized_left = tile->left - exported_layer->left;
-                    for (int row_index = 0; row_index < (int)tile->tile_height; row_index++)
+                    for (int row_index = 0; row_index < (int)tile_height; row_index++)
                     {
-                        uint8_t *destination = composed_data.get() + tile->pixel_size * tile->tile_width * row_index * number_of_columns;
-                        destination += tile->pixel_size * current_normalized_left;
-                        destination += tile->pixel_size * tile->tile_width * current_normalized_top * number_of_columns;
-                        uint8_t *source = tile->data.get() + tile->pixel_size * tile->tile_width * row_index;
-                        size_t size = tile->pixel_size * tile->tile_width;
+                        uint8_t *destination = composed_data.get() + pixel_size * tile_width * row_index * number_of_columns;
+                        destination += pixel_size * current_normalized_left;
+                        destination += pixel_size * tile_width * current_normalized_top * number_of_columns;
+                        uint8_t *source = tile->data.get() + pixel_size * tile_width * row_index;
+                        size_t size = pixel_size * tile_width;
                         /* Copy the row of the tile to the composed image */
                         std::memcpy(destination, source, size);
                     }
@@ -259,10 +259,10 @@ namespace kra
         unsigned int current_index = 0;
 
         /* Extract the main header from the tiles */
-        unsigned int version = _parse_header_element(p_layer_content, "VERSION ", current_index);
-        unsigned int tile_width = _parse_header_element(p_layer_content, "TILEWIDTH ", current_index);
-        unsigned int tile_height = _parse_header_element(p_layer_content, "TILEHEIGHT ", current_index);
-        unsigned int pixel_size = _parse_header_element(p_layer_content, "PIXELSIZE ", current_index);
+        version = _parse_header_element(p_layer_content, "VERSION ", current_index);
+        tile_width = _parse_header_element(p_layer_content, "TILEWIDTH ", current_index);
+        tile_height = _parse_header_element(p_layer_content, "TILEHEIGHT ", current_index);
+        pixel_size = _parse_header_element(p_layer_content, "PIXELSIZE ", current_index);
         unsigned int decompressed_length = pixel_size * tile_width * tile_height;
 
         printf("(Parsing Document) Tile properties (Main Header) are extracted and have following values:\n");
@@ -277,10 +277,6 @@ namespace kra
         for (unsigned int i = 0; i < number_of_tiles; i++)
         {
             std::unique_ptr<KraTile> tile = std::make_unique<KraTile>();
-            tile->version = version;
-            tile->tile_width = tile_width;
-            tile->tile_height = tile_height;
-            tile->pixel_size = pixel_size;
             tile->decompressed_length = decompressed_length;
 
             /* Now it is time to extract & decompress the data */
@@ -338,7 +334,7 @@ namespace kra
             /* TODO: Sometimes there won't be any alpha channel when it is RGB instead of RGBA. */
             std::unique_ptr<uint8_t[]> sorted_output = std::make_unique<uint8_t[]>(tile->decompressed_length);
             int jj = 0;
-            int tile_area = tile->tile_height * tile->tile_width;
+            int tile_area = tile_height * tile_width;
             for (int i = 0; i < tile_area; i++)
             {
                 sorted_output[jj + 0] = output[2 * tile_area + i]; // RED CHANNEL
