@@ -2,7 +2,6 @@
 
 namespace kra
 {
-
     // ---------------------------------------------------------------------------------------------------------------------
     // Extract the data content of the current file in the ZIP archive to a vector.
     // ---------------------------------------------------------------------------------------------------------------------
@@ -22,7 +21,7 @@ namespace kra
         buffer.resize(WRITEBUFFERSIZE);
         p_result.reserve((size_t)file_info.uncompressed_size);
 
-        /* error_code serves also as the number of bytes that were read... */
+        /* error_code also serves as the number of bytes that were read... */
         do
         {
             /* Read the data in parts of size WRITEBUFFERSIZE */
@@ -40,5 +39,4 @@ namespace kra
 
         return (int)error_code;
     }
-
 };

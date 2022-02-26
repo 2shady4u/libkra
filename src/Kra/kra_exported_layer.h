@@ -10,31 +10,34 @@
 
 #include <string>
 
-// KraExportedLayer is a structure in which the decompressed binary data for the entire image is saved.
-// Needless to say... these structures can become quite big...
-class KraExportedLayer
+namespace kra
 {
-public:
-    kra::LayerType type;
+    // KraExportedLayer is a structure in which the decompressed binary data for the entire image is saved.
+    // Needless to say... these structures can become quite big...
+    class KraExportedLayer
+    {
+    public:
+        kra::LayerType type;
 
-    std::string name;
+        std::string name;
 
-    unsigned int channel_count;
-    unsigned int x;
-    unsigned int y;
+        unsigned int channel_count;
+        unsigned int x;
+        unsigned int y;
 
-    int32_t top;
-    int32_t left;
-    int32_t bottom;
-    int32_t right;
+        int32_t top;
+        int32_t left;
+        int32_t bottom;
+        int32_t right;
 
-    uint8_t opacity;
+        uint8_t opacity;
 
-    bool visible;
+        bool visible;
 
-    std::unique_ptr<uint8_t[]> data;
+        std::unique_ptr<uint8_t[]> data;
 
-    std::vector<std::string> child_uuids;
+        std::vector<std::string> child_uuids;
+    };
 };
 
 #endif // KRA_EXPORTED_LAYER_H
