@@ -1,7 +1,7 @@
 #ifndef KRA_UTILITY_H
 #define KRA_UTILITY_H
 
-#include "../../zlib/contrib/minizip/unzip.h"
+#include "../zlib/contrib/minizip/unzip.h"
 
 #include <memory>
 #include <vector>

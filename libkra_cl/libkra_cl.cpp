@@ -5,12 +5,12 @@
 // See LICENSE in the project root for license information.
 // ############################################################################ #
 
-#include "../Kra/kra_utility.h"
+#include "../libkra/kra_utility.h"
 
-#include "../Kra/kra_document.h"
-#include "../Kra/kra_exported_layer.h"
+#include "../libkra/kra_document.h"
+#include "../libkra/kra_exported_layer.h"
 
-#include "../../libpng/png.h"
+#include "../libpng/png.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Here the data gets exported and saved as a png using the libpng library.

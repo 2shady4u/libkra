@@ -289,9 +289,9 @@ env.Append(CPPPATH=['.', 'zlib/'])
 env.Append(CPPPATH=['src/'])
 sources = [
     Glob('libpng/*.c',exclude=['libpng/pngtest.c']),
-    Glob('src/Examples/*.cpp'), 
-    Glob('src/Kra/*.cpp'),
-    'src/tinyxml2/tinyxml2.cpp',
+    Glob('libkra_cl/*.cpp'), 
+    Glob('libkra/*.cpp'),
+    'tinyxml2/tinyxml2.cpp',
     Glob('zlib/*.c'),
     Glob('zlib/contrib/minizip/unzip.c'),
     Glob('zlib/contrib/minizip/ioapi.c')
