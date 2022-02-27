@@ -2,7 +2,7 @@
 
 namespace kra
 {
-    void KraLayer::import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+    void Layer::import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
         /* Get important layer attributes from the XML-file */
         filename = p_xml_element->Attribute("filename");
@@ -26,7 +26,7 @@ namespace kra
         }
     }
 
-    void KraLayer::_import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+    void Layer::_import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
         std::string color_space_name = p_xml_element->Attribute("colorspacename");
         /* The color space defines the number of 'channels' */
@@ -53,7 +53,7 @@ namespace kra
         }
     }
 
-    void KraLayer::_import_group_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
+    void Layer::_import_group_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
         const tinyxml2::XMLElement *layers_element = p_xml_element->FirstChildElement("layers");
         const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
@@ -62,7 +62,7 @@ namespace kra
         {
             /* Check the type of the layer and proceed from there... */
             std::string node_type = layer_node->Attribute("nodetype");
-            std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
+            std::unique_ptr<Layer> layer = std::make_unique<Layer>();
             if (node_type == "paintlayer" || node_type == "grouplayer")
             {
                 if (node_type == "paintlayer")
@@ -97,7 +97,7 @@ namespace kra
         }
     }
 
-    void KraLayer::print_layer_attributes() const
+    void Layer::print_layer_attributes() const
     {
         printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", name.c_str());
         printf("(Parsing Document)  	>> filename = %s\n", filename.c_str());
@@ -120,7 +120,7 @@ namespace kra
         }
     }
 
-    void KraLayer::_print_group_layer_attributes() const
+    void Layer::_print_group_layer_attributes() const
     {
         printf("(Parsing Document)  	>> my children are:\n");
         for (const auto &layer : children)
@@ -129,9 +129,9 @@ namespace kra
         }
     }
 
-    std::unique_ptr<KraExportedLayer> KraLayer::get_exported_layer()
+    std::unique_ptr<ExportedLayer> Layer::get_exported_layer()
     {
-        std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
+        std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
 
         /* Copy all important properties immediately */
         exported_layer->name = name;

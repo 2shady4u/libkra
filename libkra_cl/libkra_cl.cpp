@@ -102,7 +102,7 @@ finalise:
 	return success;
 }
 
-void save_layer_to_image(const std::unique_ptr<kra::KraExportedLayer> &layer)
+void save_layer_to_image(const std::unique_ptr<kra::ExportedLayer> &layer)
 {
 	unsigned int layer_width = (unsigned int)(layer->right - layer->left);
 	unsigned int layer_height = (unsigned int)(layer->bottom - layer->top);
@@ -115,7 +115,7 @@ void save_layer_to_image(const std::unique_ptr<kra::KraExportedLayer> &layer)
 	writeImage(ssFilename.str().c_str(), layer_width, layer_height, layer->data.data());
 }
 
-void process_layer(const std::unique_ptr<kra::KraDocument> &document, const std::unique_ptr<kra::KraExportedLayer> &layer)
+void process_layer(const std::unique_ptr<kra::Document> &document, const std::unique_ptr<kra::ExportedLayer> &layer)
 {
 	switch (layer->type)
 	{
@@ -127,7 +127,7 @@ void process_layer(const std::unique_ptr<kra::KraDocument> &document, const std:
 	case kra::GROUP_LAYER:
 		for (auto const &uuid : layer->child_uuids)
 		{
-			std::unique_ptr<kra::KraExportedLayer> child = document->get_exported_layer_with_uuid(uuid);
+			std::unique_ptr<kra::ExportedLayer> child = document->get_exported_layer_with_uuid(uuid);
 
 			process_layer(document, child);
 		}
@@ -139,14 +139,14 @@ void process_layer(const std::unique_ptr<kra::KraDocument> &document, const std:
 // ---------------------------------------------------------------------------------------------------------------------
 int ExampleReadKra(std::wstring rawFile)
 {
-	std::unique_ptr<kra::KraDocument> document = std::make_unique<kra::KraDocument>();
+	std::unique_ptr<kra::Document> document = std::make_unique<kra::Document>();
 	document->load(rawFile);
 	if (document == NULL)
 	{
 		return 1;
 	}
 
-	std::vector<std::unique_ptr<kra::KraExportedLayer>> exported_layers = document->get_all_exported_layers();
+	std::vector<std::unique_ptr<kra::ExportedLayer>> exported_layers = document->get_all_exported_layers();
 
 	for (auto const &layer : exported_layers)
 	{

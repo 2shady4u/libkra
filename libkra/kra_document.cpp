@@ -5,7 +5,7 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Create a KRA Document which contains document properties and a vector of KraLayer-pointers.
     // ---------------------------------------------------------------------------------------------------------------------
-    void KraDocument::load(const std::wstring &p_path)
+    void Document::load(const std::wstring &p_path)
     {
         /* Convert wstring to string */
         std::string string_path = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(p_path);
@@ -65,9 +65,9 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Take a single layer, at a certain index, and get an exported version of this layer
     // ---------------------------------------------------------------------------------------------------------------------
-    std::unique_ptr<KraExportedLayer> KraDocument::get_exported_layer_at(int p_layer_index) const
+    std::unique_ptr<ExportedLayer> Document::get_exported_layer_at(int p_layer_index) const
     {
-        std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
+        std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
 
         if (p_layer_index < 0 || p_layer_index >= layers.size())
         {
@@ -85,13 +85,13 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Get an exported version of the exact layer with the given uuid
     // ---------------------------------------------------------------------------------------------------------------------
-    std::unique_ptr<KraExportedLayer> KraDocument::get_exported_layer_with_uuid(const std::string &p_uuid) const
+    std::unique_ptr<ExportedLayer> Document::get_exported_layer_with_uuid(const std::string &p_uuid) const
     {
-        std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
+        std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
 
         if (layer_map.find(p_uuid) != layer_map.end())
         {
-            const std::unique_ptr<KraLayer> &layer = layer_map.at(p_uuid);
+            const std::unique_ptr<Layer> &layer = layer_map.at(p_uuid);
             exported_layer = layer->get_exported_layer();
         }
 
@@ -101,14 +101,14 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Take all the layers and their tiles and construct/compose the complete image!
     // ---------------------------------------------------------------------------------------------------------------------
-    std::vector<std::unique_ptr<KraExportedLayer>> KraDocument::get_all_exported_layers() const
+    std::vector<std::unique_ptr<ExportedLayer>> Document::get_all_exported_layers() const
     {
-        std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers;
+        std::vector<std::unique_ptr<ExportedLayer>> exportedLayers;
 
         /* Go through all the layers and add them to the exportedLayers vector */
         for (auto const &layer : layers)
         {
-            std::unique_ptr<KraExportedLayer> exported_layer = std::make_unique<KraExportedLayer>();
+            std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
             exported_layer = layer->get_exported_layer();
 
             exportedLayers.push_back(std::move(exported_layer));
@@ -122,7 +122,7 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Create the layer_map as to easily find layers by their uuid
     // ---------------------------------------------------------------------------------------------------------------------
-    void KraDocument::_create_layer_map()
+    void Document::_create_layer_map()
     {
         layer_map.clear();
         /* Go through all the layers and add them to the map */
@@ -135,7 +135,7 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Recursively add all child layers (and those children's children) to the layer_map
     // ---------------------------------------------------------------------------------------------------------------------
-    void KraDocument::_add_layer_to_map(const std::unique_ptr<KraLayer> &layer)
+    void Document::_add_layer_to_map(const std::unique_ptr<Layer> &layer)
     {
         layer_map.insert({layer->uuid, layer});
         /* Also add all the children of this layer to the map */
@@ -148,9 +148,9 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Go through the XML-file and extract all the layer properties.
     // ---------------------------------------------------------------------------------------------------------------------
-    std::vector<std::unique_ptr<KraLayer>> KraDocument::_parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement)
+    std::vector<std::unique_ptr<Layer>> Document::_parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement)
     {
-        std::vector<std::unique_ptr<KraLayer>> layers;
+        std::vector<std::unique_ptr<Layer>> layers;
         const tinyxml2::XMLElement *layers_element = xmlElement->FirstChildElement("layers");
         const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
 
@@ -160,7 +160,7 @@ namespace kra
         {
             /* Check the type of the layer and proceed from there... */
             std::string node_type = layer_node->Attribute("nodetype");
-            std::unique_ptr<KraLayer> layer = std::make_unique<KraLayer>();
+            std::unique_ptr<Layer> layer = std::make_unique<Layer>();
             /* If it is not a paintlayer nor a grouplayer then we don't support it! */
             if (node_type == "paintlayer" || node_type == "grouplayer")
             {

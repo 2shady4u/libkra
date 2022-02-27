@@ -14,7 +14,7 @@ namespace kra
 {
     // KraExportedLayer is a structure in which the decompressed binary data for the entire image is saved.
     // Needless to say... these structures can become quite big...
-    class KraExportedLayer
+    class ExportedLayer
     {
     public:
         LayerType type;

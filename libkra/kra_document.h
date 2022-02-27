@@ -30,15 +30,15 @@
 
 namespace kra
 {
-	// KraDocument is a structure in which the general properties of a KRA document/archive are stored.
+	// KraDocument is a structure in which the general properties of a KRA/KRZ-archive are stored.
 	// Each KRA archive consists of one or more layers (stored in a vector) that contain actual data.
-	class KraDocument
+	class Document
 	{
 	private:
-		std::vector<std::unique_ptr<KraLayer>> _parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement);
+		std::vector<std::unique_ptr<Layer>> _parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement);
 
 		void _create_layer_map();
-		void _add_layer_to_map(const std::unique_ptr<KraLayer> &layer);
+		void _add_layer_to_map(const std::unique_ptr<Layer> &layer);
 
 	public:
 		std::string name;
@@ -48,18 +48,16 @@ namespace kra
 
 		ColorSpace color_space;
 
-		std::vector<std::unique_ptr<KraLayer>> layers;
+		std::vector<std::unique_ptr<Layer>> layers;
 
-		bool corruption_flag = false;
-
-		std::unordered_map<std::string, const std::unique_ptr<KraLayer> &> layer_map;
+		std::unordered_map<std::string, const std::unique_ptr<Layer> &> layer_map;
 
 		void load(const std::wstring &p_path);
 
-		std::unique_ptr<KraExportedLayer> get_exported_layer_at(int p_layer_index) const;
-		std::unique_ptr<KraExportedLayer> get_exported_layer_with_uuid(const std::string &p_uuid) const;
+		std::unique_ptr<ExportedLayer> get_exported_layer_at(int p_layer_index) const;
+		std::unique_ptr<ExportedLayer> get_exported_layer_with_uuid(const std::string &p_uuid) const;
 
-		std::vector<std::unique_ptr<KraExportedLayer>> get_all_exported_layers() const;
+		std::vector<std::unique_ptr<ExportedLayer>> get_all_exported_layers() const;
 	};
 };
 

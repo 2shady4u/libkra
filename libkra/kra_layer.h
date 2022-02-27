@@ -26,7 +26,7 @@ namespace kra
 {
     // KraLayer is a structure in which general properties for a KRA layer are stored.
     // The actual image data is found in the tiles vector.
-    class KraLayer
+    class Layer
     {
     private:
         void _import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
@@ -52,11 +52,11 @@ namespace kra
 
         std::unique_ptr<LayerData> layer_data;
 
-        std::vector<std::unique_ptr<KraLayer>> children;
+        std::vector<std::unique_ptr<Layer>> children;
 
         void import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
 
-        std::unique_ptr<KraExportedLayer> get_exported_layer();
+        std::unique_ptr<ExportedLayer> get_exported_layer();
 
         void print_layer_attributes() const;
     };
