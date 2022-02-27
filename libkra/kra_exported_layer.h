@@ -36,7 +36,7 @@ namespace kra
 
         unsigned int pixel_size;
 
-        std::unique_ptr<uint8_t[]> data;
+        std::vector<uint8_t> data;
 
         std::vector<std::string> child_uuids;
     };

@@ -112,7 +112,7 @@ void save_layer_to_image(const std::unique_ptr<kra::KraExportedLayer> &layer)
 	ssFilename << layer->name;
 	ssFilename << ".png";
 	/* TODO: Add the actual exporting functionality here! */
-	writeImage(ssFilename.str().c_str(), layer_width, layer_height, layer->data.get());
+	writeImage(ssFilename.str().c_str(), layer_width, layer_height, layer->data.data());
 }
 
 void process_layer(const std::unique_ptr<kra::KraDocument> &document, const std::unique_ptr<kra::KraExportedLayer> &layer)
@@ -163,7 +163,8 @@ static void show_usage(std::string name)
 			  << "General options:\n"
 			  << "  -h, --help                       Display this help message.\n"
 			  << "  -s, --source <source>            Specify the KRA source file.\n"
-			  << "  -q, --quiet                      Do not print anything in the console.\n";
+			  << "  -q, --quiet                      Do not print anything in the console.\n"
+			  << "  -v, --verbose                    Print additional logs in the console.\n";
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -196,7 +197,11 @@ int main(int argc, const char *argv[])
 		}
 		else if ((arg == "-q") || (arg == "--quiet"))
 		{
-			kra::verbosity_level = kra::QUIET;
+			kra::verbosity_level = kra::QUIET;	
+		}
+		else if ((arg == "-v") || (arg == "--verbose"))
+		{
+			kra::verbosity_level = kra::VERBOSE;
 		}
 		else
 		{

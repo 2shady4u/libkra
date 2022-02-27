@@ -30,7 +30,7 @@ namespace kra
         VERY_VERBOSE
     };
 
-    static VerbosityLevel verbosity_level = NORMAL;
+    extern VerbosityLevel verbosity_level;
 
     int extract_current_file_to_vector(unzFile &p_file, std::vector<unsigned char> &p_result);
 };
