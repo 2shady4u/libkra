@@ -1,6 +1,5 @@
 // ############################################################################ #
-// Copyright © 2020 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
-// Copyright © 2020 Gamechuck d.o.o. <gamechuckdev@gmail.com>
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
 // Licensed under the MIT License.
 // See LICENSE in the project root for license information.
 // ############################################################################ #
@@ -30,12 +29,11 @@
 
 namespace kra
 {
-	// KraDocument is a structure in which the general properties of a KRA/KRZ-archive are stored.
-	// Each KRA archive consists of one or more layers (stored in a vector) that contain actual data.
+	/* This class stores the general properties of a KRA/KRZ-archive as well as a vector of layers containing the actual data */
 	class Document
 	{
 	private:
-		std::vector<std::unique_ptr<Layer>> _parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement);
+		std::vector<std::unique_ptr<Layer>> _parse_layers(unzFile &p_file, const tinyxml2::XMLElement *xmlElement);
 
 		void _create_layer_map();
 		void _add_layer_to_map(const std::unique_ptr<Layer> &layer);
@@ -58,6 +56,8 @@ namespace kra
 		std::unique_ptr<ExportedLayer> get_exported_layer_with_uuid(const std::string &p_uuid) const;
 
 		std::vector<std::unique_ptr<ExportedLayer>> get_all_exported_layers() const;
+
+		void print_document_attributes() const;
 	};
 };
 

@@ -1,7 +1,16 @@
+// ############################################################################ #
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
+// Licensed under the MIT License.
+// See LICENSE in the project root for license information.
+// ############################################################################ #
+
 #include "kra_layer.h"
 
 namespace kra
 {
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Extract important common attributes as stored in this layer's XML element
+    // ---------------------------------------------------------------------------------------------------------------------
     void Layer::import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
         /* Get important layer attributes from the XML-file */
@@ -26,6 +35,77 @@ namespace kra
         }
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Get an exported version of this layer that can be used by other (external) programs & wrappers
+    // ---------------------------------------------------------------------------------------------------------------------
+    std::unique_ptr<ExportedLayer> Layer::get_exported_layer() const
+    {
+        std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
+
+        /* Copy all important properties immediately */
+        exported_layer->name = name;
+        exported_layer->x = x;
+        exported_layer->y = y;
+        exported_layer->opacity = opacity;
+        exported_layer->visible = visible;
+        exported_layer->type = type;
+
+        switch (type)
+        {
+        case PAINT_LAYER:
+        {
+            exported_layer->color_space = color_space;
+
+            exported_layer->top = layer_data->get_top();
+            exported_layer->left = layer_data->get_left();
+            exported_layer->bottom = layer_data->get_bottom();
+            exported_layer->right = layer_data->get_right();
+
+            exported_layer->pixel_size = layer_data->pixel_size;
+
+            exported_layer->data = layer_data->get_composed_data();
+            break;
+        }
+        case GROUP_LAYER:
+            for (auto const &child : children)
+            {
+                exported_layer->child_uuids.push_back(child->uuid);
+            }
+            break;
+        }
+
+        return exported_layer;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Print layer attributes to the output console
+    // ---------------------------------------------------------------------------------------------------------------------
+    void Layer::print_layer_attributes() const
+    {
+        fprintf(stdout, "------- Layer attributes are extracted and have following values:\n");
+        fprintf(stdout, "(Layer) >> filename = %s\n", filename.c_str());
+        fprintf(stdout, "(Layer) >> name = %s\n", name.c_str());
+        fprintf(stdout, "(Layer) >> uuid = %s\n", uuid.c_str());
+        fprintf(stdout, "(Layer) >> x = %i\n", x);
+        fprintf(stdout, "(Layer) >> y = %i\n", y);
+        fprintf(stdout, "(Layer) >> opacity = %i\n", opacity);
+        fprintf(stdout, "(Layer) >> visible = %s\n", visible ? "true" : "false");
+        fprintf(stdout, "(Layer) >> type = %i\n", type);
+
+        switch (type)
+        {
+        case PAINT_LAYER:
+            _print_paint_layer_attributes();
+            break;
+        case GROUP_LAYER:
+            _print_group_layer_attributes();
+            break;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Extract attributes specific to this layer's type (= PAINT_LAYER) and create a LayerData-instance
+    // ---------------------------------------------------------------------------------------------------------------------
     void Layer::_import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
         std::string color_space_name = p_xml_element->Attribute("colorspacename");
@@ -49,10 +129,13 @@ namespace kra
         }
         else
         {
-            printf("(Parsing Document) WARNING: Layer entry with path '%s' could not be found in KRA archive.\n", layer_path.c_str());
+            fprintf(stdout, "ERROR: Layer entry with path '%s' could not be found in KRA archive.\n", layer_path.c_str());
         }
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Extract attributes specific to this layer's type (= GROUP_LAYER) and recursively import child layers
+    // ---------------------------------------------------------------------------------------------------------------------
     void Layer::_import_group_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
         const tinyxml2::XMLElement *layers_element = p_xml_element->FirstChildElement("layers");
@@ -76,7 +159,7 @@ namespace kra
 
                 layer->import_attributes(p_name, p_file, layer_node);
 
-                if (verbosity_level == VERBOSE)
+                if (verbosity_level >= VERBOSE)
                 {
                     layer->print_layer_attributes();
                 }
@@ -97,73 +180,25 @@ namespace kra
         }
     }
 
-    void Layer::print_layer_attributes() const
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Print additional attributes specific to this layer's type (= PAINT_LAYER) to the output console
+    // ---------------------------------------------------------------------------------------------------------------------
+    void Layer::_print_paint_layer_attributes() const
     {
-        printf("(Parsing Document) Layer '%s' properties are extracted and have following values:\n", name.c_str());
-        printf("(Parsing Document)  	>> filename = %s\n", filename.c_str());
-        printf("(Parsing Document)  	>> name = %s\n", name.c_str());
-        printf("(Parsing Document)  	>> uuid = %s\n", uuid.c_str());
-        printf("(Parsing Document)  	>> color_space = %i\n", color_space);
-        printf("(Parsing Document)  	>> x = %i\n", x);
-        printf("(Parsing Document)  	>> y = %i\n", y);
-        printf("(Parsing Document)  	>> opacity = %i\n", opacity);
-        printf("(Parsing Document)  	>> visible = %s\n", visible ? "true" : "false");
-        printf("(Parsing Document)  	>> type = %i\n", type);
-
-        switch (type)
-        {
-        case PAINT_LAYER:
-            break;
-        case GROUP_LAYER:
-            _print_group_layer_attributes();
-            break;
-        }
+        fprintf(stdout, "(Layer) Additional attributes specific to PAINT_LAYER:\n");
+        fprintf(stdout, "(Layer) >> color_space = %i\n", color_space);
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Print additional attributes specific to this layer's type (= GROUP_LAYER) to the output console
+    // ---------------------------------------------------------------------------------------------------------------------
     void Layer::_print_group_layer_attributes() const
     {
-        printf("(Parsing Document)  	>> my children are:\n");
+        fprintf(stdout, "(Layer) Additional attributes specific to GROUP_LAYER:\n");
+        fprintf(stdout, "(Layer)  	>> my children are:\n");
         for (const auto &layer : children)
         {
-            printf("(Parsing Document)  	>> '%s'\n", layer->name.c_str());
+            fprintf(stdout, "(Layer)  	>> '%s'\n", layer->name.c_str());
         }
-    }
-
-    std::unique_ptr<ExportedLayer> Layer::get_exported_layer()
-    {
-        std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
-
-        /* Copy all important properties immediately */
-        exported_layer->name = name;
-        exported_layer->color_space = color_space;
-        exported_layer->x = x;
-        exported_layer->y = y;
-        exported_layer->opacity = opacity;
-        exported_layer->visible = visible;
-        exported_layer->type = type;
-
-        switch (type)
-        {
-        case PAINT_LAYER:
-        {
-            exported_layer->top = layer_data->get_top();
-            exported_layer->left = layer_data->get_left();
-            exported_layer->bottom = layer_data->get_bottom();
-            exported_layer->right = layer_data->get_right();
-
-            exported_layer->pixel_size = layer_data->pixel_size;
-
-            exported_layer->data = layer_data->get_composed_data();
-            break;
-        }
-        case GROUP_LAYER:
-            for (auto const &child : children)
-            {
-                exported_layer->child_uuids.push_back(child->uuid);
-            }
-            break;
-        }
-
-        return exported_layer;
     }
 };

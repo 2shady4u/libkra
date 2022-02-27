@@ -1,5 +1,13 @@
+// ############################################################################ #
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
+// Licensed under the MIT License.
+// See LICENSE in the project root for license information.
+// ############################################################################ #
+
 #ifndef KRA_LAYER_DATA_H
 #define KRA_LAYER_DATA_H
+
+#include "kra_utility.h"
 
 #include <memory>
 #include <vector>
@@ -10,6 +18,7 @@
 
 namespace kra
 {
+    /* This class contains the actual data as stored in the layer's unique binary file */
     class LayerData
     {
     private:
@@ -36,12 +45,12 @@ namespace kra
         int32_t bottom;
         int32_t right;
 
-        unsigned int _parse_header_element(const std::vector<unsigned char> &p_layer_content, const std::string &p_element_name, unsigned int &p_index);
-        std::string _get_header_element(const std::vector<unsigned char> &p_layer_content, unsigned int &p_index);
-
-        int _lzff_decompress(const void *input, const int length, void *output, int maxout) const;
+        unsigned int _get_element_value(const std::vector<unsigned char> &p_layer_content, const std::string &p_element_name, unsigned int &p_index) const;
+        std::string _get_header_line(const std::vector<unsigned char> &p_layer_content, unsigned int &p_index) const;
 
         void _update_dimensions();
+
+        int _lzff_decompress(const void *input, const int length, void *output, int maxout) const;
 
     public:
         // Version statement of the layer, always equal to 2.
@@ -64,6 +73,8 @@ namespace kra
         int32_t get_left() const;
         int32_t get_bottom() const;
         int32_t get_right() const;
+
+        void print_layer_data_attributes() const;
     };
 };
 

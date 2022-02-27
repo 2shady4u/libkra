@@ -1,9 +1,15 @@
+// ############################################################################ #
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
+// Licensed under the MIT License.
+// See LICENSE in the project root for license information.
+// ############################################################################ #
+
 #include "kra_document.h"
 
 namespace kra
 {
     // ---------------------------------------------------------------------------------------------------------------------
-    // Create a KRA Document which contains document properties and a vector of KraLayer-pointers.
+    // Load a KRA/KRZ archive from file and import document properties and layers
     // ---------------------------------------------------------------------------------------------------------------------
     void Document::load(const std::wstring &p_path)
     {
@@ -11,54 +17,57 @@ namespace kra
         std::string string_path = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(p_path);
         const char *char_path = string_path.c_str();
 
-        /* Open the KRA archive using minizip */
+        /* Open the KRA archive using zlib */
         unzFile file = unzOpen(char_path);
         if (file == NULL)
         {
-            printf("(Parsing Document) ERROR: Failed to open KRA archive.\n");
+            fprintf(stderr, "ERROR: Failed to open KRA/KRZ archive at path '%s'\n", char_path);
             return;
         }
 
-        /* A 'maindoc.xml' file should always be present in the KRA archive, otherwise abort immediately */
+        /* A 'maindoc.xml' file should always be present in the KRA/KRZ archive, if not return immediately */
         int errorCode = unzLocateFile(file, "maindoc.xml", 1);
         if (errorCode == UNZ_OK)
         {
-            printf("(Parsing Document) Found 'maindoc.xml', extracting document and layer properties\n");
+            if (verbosity_level > QUIET)
+            {
+                fprintf(stdout, "Found 'maindoc.xml', extracting document and layer properties\n");
+            }
         }
         else
         {
-            printf("(Parsing Document) WARNING: KRA archive did not contain maindoc.xml!\n");
+            fprintf(stderr, "ERROR: Required file 'maindoc.xml' is missing in archive ('%s')\n", char_path);
             return;
         }
 
         std::vector<unsigned char> result_vector;
         extract_current_file_to_vector(file, result_vector);
-        /* Put the vector into a string and parse it using tinyXML2 */
-        std::string xmlString(result_vector.begin(), result_vector.end());
+
+        /* Convert the vector into a string and parse it using tinyXML2 */
+        const std::string xml_string(result_vector.begin(), result_vector.end());
         tinyxml2::XMLDocument xml_document;
-        xml_document.Parse(xmlString.c_str());
-        tinyxml2::XMLElement *xml_element = xml_document.FirstChildElement("DOC")->FirstChildElement("IMAGE");
+        xml_document.Parse(xml_string.c_str());
 
         /* Get important document attributes from the XML-file */
+        const tinyxml2::XMLElement *xml_element = xml_document.FirstChildElement("DOC")->FirstChildElement("IMAGE");
         width = xml_element->UnsignedAttribute("width", 0);
         height = xml_element->UnsignedAttribute("height", 0);
         name = xml_element->Attribute("name");
         std::string color_space_name = xml_element->Attribute("colorspacename");
-        /* The color space defines the number of 'channels' */
-        /* Each separate layer also has its own color space in KRA, so not sure why this is here? */
+        /* Each separate layer also has its own color space in KRA, so this color_space isn't really important */
         color_space = get_color_space(color_space_name);
 
-        printf("(Parsing Document) Document properties are extracted and have following values:\n");
-        printf("(Parsing Document)  	>> name = %s\n", name.c_str());
-        printf("(Parsing Document)  	>> width = %i\n", width);
-        printf("(Parsing Document)  	>> height = %i\n", height);
-        printf("(Parsing Document)  	>> color_space = %i\n", color_space);
+        if (verbosity_level >= VERBOSE)
+        {
+            print_document_attributes();
+        }
 
         /* Parse all the layers registered in the maindoc.xml and add them to the document */
         layers = _parse_layers(file, xml_element);
-
+    
         _create_layer_map();
 
+        /* Close the KRA/KRZ archive */
         errorCode = unzClose(file);
     }
 
@@ -69,14 +78,14 @@ namespace kra
     {
         std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
 
-        if (p_layer_index < 0 || p_layer_index >= layers.size())
-        {
-            // TODO: There should be some kind of error here
-        }
-        else
+        if (p_layer_index >= 0 && p_layer_index < layers.size())
         {
             auto const &layer = layers.at(p_layer_index);
             exported_layer = layer->get_exported_layer();
+        }
+        else
+        {
+            fprintf(stderr, "ERROR: Index %i is out of range, should be between 0 and %zi", p_layer_index, layers.size());
         }
 
         return exported_layer;
@@ -94,6 +103,10 @@ namespace kra
             const std::unique_ptr<Layer> &layer = layer_map.at(p_uuid);
             exported_layer = layer->get_exported_layer();
         }
+        else
+        {
+            fprintf(stderr, "ERROR: There's no layer with UUID %s", p_uuid.c_str());
+        }
 
         return exported_layer;
     }
@@ -103,52 +116,38 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     std::vector<std::unique_ptr<ExportedLayer>> Document::get_all_exported_layers() const
     {
-        std::vector<std::unique_ptr<ExportedLayer>> exportedLayers;
+        std::vector<std::unique_ptr<ExportedLayer>> exported_layers;
 
-        /* Go through all the layers and add them to the exportedLayers vector */
+        /* Go through all the layers and add them to the exported_layers vector */
         for (auto const &layer : layers)
         {
             std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
             exported_layer = layer->get_exported_layer();
 
-            exportedLayers.push_back(std::move(exported_layer));
+            exported_layers.push_back(std::move(exported_layer));
         }
 
         /* Reverse the direction of the vector as to preserve draw order */
-        std::reverse(exportedLayers.begin(), exportedLayers.end());
-        return exportedLayers;
+        std::reverse(exported_layers.begin(), exported_layers.end());
+        return exported_layers;
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // Create the layer_map as to easily find layers by their uuid
+    // Print document attributes to the output console
     // ---------------------------------------------------------------------------------------------------------------------
-    void Document::_create_layer_map()
+    void Document::print_document_attributes() const
     {
-        layer_map.clear();
-        /* Go through all the layers and add them to the map */
-        for (auto const &layer : layers)
-        {
-            _add_layer_to_map(layer);
-        }
-    }
-
-    // ---------------------------------------------------------------------------------------------------------------------
-    // Recursively add all child layers (and those children's children) to the layer_map
-    // ---------------------------------------------------------------------------------------------------------------------
-    void Document::_add_layer_to_map(const std::unique_ptr<Layer> &layer)
-    {
-        layer_map.insert({layer->uuid, layer});
-        /* Also add all the children of this layer to the map */
-        for (auto const &child : layer->children)
-        {
-            _add_layer_to_map(child);
-        }
+        fprintf(stdout, "---------- Document attributes are extracted and have following values:\n");
+        fprintf(stdout, "(Document) >> name = %s\n", name.c_str());
+        fprintf(stdout, "(Document) >> width = %i\n", width);
+        fprintf(stdout, "(Document) >> height = %i\n", height);
+        fprintf(stdout, "(Document) >> color_space = %i\n", color_space);
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
     // Go through the XML-file and extract all the layer properties.
     // ---------------------------------------------------------------------------------------------------------------------
-    std::vector<std::unique_ptr<Layer>> Document::_parse_layers(unzFile p_file, tinyxml2::XMLElement *xmlElement)
+    std::vector<std::unique_ptr<Layer>> Document::_parse_layers(unzFile &p_file, const tinyxml2::XMLElement *xmlElement)
     {
         std::vector<std::unique_ptr<Layer>> layers;
         const tinyxml2::XMLElement *layers_element = xmlElement->FirstChildElement("layers");
@@ -175,7 +174,7 @@ namespace kra
 
                 layer->import_attributes(name, p_file, layer_node);
 
-                if (verbosity_level == VERBOSE)
+                if (verbosity_level >= VERBOSE)
                 {
                     layer->print_layer_attributes();
                 }
@@ -196,5 +195,31 @@ namespace kra
         }
 
         return layers;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Create the layer_map as to easily find layers by their UUID
+    // ---------------------------------------------------------------------------------------------------------------------
+    void Document::_create_layer_map()
+    {
+        layer_map.clear();
+        /* Go through all the layers and add them to the map */
+        for (auto const &layer : layers)
+        {
+            _add_layer_to_map(layer);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Recursively add all child layers (and those children's children) to the layer_map
+    // ---------------------------------------------------------------------------------------------------------------------
+    void Document::_add_layer_to_map(const std::unique_ptr<Layer> &layer)
+    {
+        layer_map.insert({layer->uuid, layer});
+        /* Also add all the children of this layer to the map */
+        for (auto const &child : layer->children)
+        {
+            _add_layer_to_map(child);
+        }
     }
 };

@@ -1,3 +1,9 @@
+// ############################################################################ #
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
+// Licensed under the MIT License.
+// See LICENSE in the project root for license information.
+// ############################################################################ #
+
 #include "kra_utility.h"
 
 namespace kra
@@ -5,7 +11,7 @@ namespace kra
     VerbosityLevel verbosity_level = NORMAL;
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // Extract the data content of the current file in the ZIP archive to a vector.
+    // Extract the data content of the current file in the ZIP archive to a vector
     // ---------------------------------------------------------------------------------------------------------------------
     int extract_current_file_to_vector(unzFile &p_file, std::vector<unsigned char> &p_result)
     {
@@ -42,6 +48,9 @@ namespace kra
         return (int)error_code;
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Try to match the input string with one of the constants of the ColorSpace-enum
+    // ---------------------------------------------------------------------------------------------------------------------
     ColorSpace get_color_space(const std::string &p_color_space_name)
     {
         if (p_color_space_name.compare("RGBA") == 0)

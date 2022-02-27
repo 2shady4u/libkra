@@ -1,3 +1,9 @@
+// ############################################################################ #
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
+// Licensed under the MIT License.
+// See LICENSE in the project root for license information.
+// ############################################################################ #
+
 #ifndef KRA_UTILITY_H
 #define KRA_UTILITY_H
 

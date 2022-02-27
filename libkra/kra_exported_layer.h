@@ -1,6 +1,5 @@
 // ############################################################################ #
-// Copyright © 2020 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
-// Copyright © 2020 Gamechuck d.o.o. <gamechuckdev@gmail.com>
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
 // Licensed under the MIT License.
 // See LICENSE in the project root for license information.
 // ############################################################################ #
@@ -12,32 +11,35 @@
 
 namespace kra
 {
-    // KraExportedLayer is a structure in which the decompressed binary data for the entire image is saved.
-    // Needless to say... these structures can become quite big...
+    // This class represents an exported version of a Layer */
+    /* In the case of a PAINT_LAYER, this class stores the decompressed data of the entire layer */
+    /* In the case of a GROUP_LAYER, this class stores a vector of UUIDs of its child layers */
     class ExportedLayer
     {
     public:
-        LayerType type;
-        ColorSpace color_space;
-
         std::string name;
 
         unsigned int x;
         unsigned int y;
+
+        uint8_t opacity;
+
+        bool visible;
+
+        LayerType type;
+
+        // PAINT_LAYER
+        ColorSpace color_space = RGBA;
 
         int32_t top;
         int32_t left;
         int32_t bottom;
         int32_t right;
 
-        uint8_t opacity;
-
-        bool visible;
-
         unsigned int pixel_size;
-
         std::vector<uint8_t> data;
 
+        // GROUP_LAYER
         std::vector<std::string> child_uuids;
     };
 };

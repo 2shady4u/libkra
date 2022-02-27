@@ -1,9 +1,15 @@
+// ############################################################################ #
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
+// Licensed under the MIT License.
+// See LICENSE in the project root for license information.
+// ############################################################################ #
+
 #include "kra_layer_data.h"
 
 namespace kra
 {
     // ---------------------------------------------------------------------------------------------------------------------
-    // Extract the tile data and properties from the raw binary data.
+    // Extract the layer's attributes and data from the file's raw binary content.
     // ---------------------------------------------------------------------------------------------------------------------
     void LayerData::import_attributes(const std::vector<unsigned char> &p_layer_content)
     {
@@ -12,20 +18,18 @@ namespace kra
         unsigned int current_index = 0;
 
         /* Extract the main header from the tiles */
-        version = _parse_header_element(p_layer_content, "VERSION ", current_index);
-        tile_width = _parse_header_element(p_layer_content, "TILEWIDTH ", current_index);
-        tile_height = _parse_header_element(p_layer_content, "TILEHEIGHT ", current_index);
-        pixel_size = _parse_header_element(p_layer_content, "PIXELSIZE ", current_index);
+        version = _get_element_value(p_layer_content, "VERSION ", current_index);
+        tile_width = _get_element_value(p_layer_content, "TILEWIDTH ", current_index);
+        tile_height = _get_element_value(p_layer_content, "TILEHEIGHT ", current_index);
+        pixel_size = _get_element_value(p_layer_content, "PIXELSIZE ", current_index);
         unsigned int decompressed_length = pixel_size * tile_width * tile_height;
 
-        printf("(Parsing Document) Tile properties (Main Header) are extracted and have following values:\n");
-        printf("(Parsing Document)  	>> version = %i\n", version);
-        printf("(Parsing Document)  	>> tile_width = %i\n", tile_width);
-        printf("(Parsing Document)  	>> tile_height = %i\n", tile_height);
-        printf("(Parsing Document)  	>> pixel_size = %i\n", pixel_size);
-        printf("(Parsing Document)  	>> decompressed_length = %i\n", decompressed_length);
+        if (verbosity_level >= VERBOSE)
+        {
+            print_layer_data_attributes();
+        }
 
-        unsigned int number_of_tiles = _parse_header_element(p_layer_content, "DATA ", current_index);
+        unsigned int number_of_tiles = _get_element_value(p_layer_content, "DATA ", current_index);
 
         for (unsigned int i = 0; i < number_of_tiles; i++)
         {
@@ -33,7 +37,7 @@ namespace kra
 
             /* Now it is time to extract & decompress the data */
             /* First the non-general element of the header needs to be extracted */
-            std::string headerString = _get_header_element(p_layer_content, current_index);
+            std::string headerString = _get_header_line(p_layer_content, current_index);
             std::regex e("(-?\\d*),(-?\\d*),(\\w*),(\\d*)");
             std::smatch sm;
             std::regex_match(headerString, sm, e);
@@ -70,37 +74,9 @@ namespace kra
         _update_dimensions();
     }
 
-    void LayerData::_update_dimensions()
-    {
-        /* Reset all the dimensions back to 0 */
-        top = 0;
-        left = 0;
-        bottom = 0;
-        right = 0;
-
-        /* Find the extents of the layer canvas */
-        for (auto const &tile : tiles)
-        {
-            if (tile->left < left)
-            {
-                left = tile->left;
-            }
-            if (tile->left + (int32_t)tile_width > right)
-            {
-                right = tile->left + (int32_t)tile_width;
-            }
-
-            if (tile->top < top)
-            {
-                top = tile->top;
-            }
-            if (tile->top + (int32_t)tile_height > bottom)
-            {
-                bottom = tile->top + (int32_t)tile_height;
-            }
-        }
-    }
-
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Decompress & compose the binary data of the entire layer 
+    // ---------------------------------------------------------------------------------------------------------------------
     std::vector<uint8_t> LayerData::get_composed_data() const
     {
         /* Allocate space for the output data! */
@@ -168,6 +144,9 @@ namespace kra
         return composed_data;
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Helper functions for accessing this layer's dimensions
+    // ---------------------------------------------------------------------------------------------------------------------
     unsigned int LayerData::get_width() const
     {
         return (unsigned int)(right - left);
@@ -199,13 +178,26 @@ namespace kra
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // Extract a header element and match it with the element name.
+    // Print layer attributes to the output console
     // ---------------------------------------------------------------------------------------------------------------------
-    unsigned int LayerData::_parse_header_element(const std::vector<unsigned char> &p_layer_content, const std::string &p_element_name, unsigned int &p_index)
+    void LayerData::print_layer_data_attributes() const
+    {
+        fprintf(stdout, "----------- Tile properties (Main Header) are extracted and have following values:\n");
+        fprintf(stdout, "(LayerData) >> version = %i\n", version);
+        fprintf(stdout, "(LayerData) >> tile_width = %i\n", tile_width);
+        fprintf(stdout, "(LayerData) >> tile_height = %i\n", tile_height);
+        fprintf(stdout, "(LayerData) >> pixel_size = %i\n", pixel_size);
+        //printf("(Parsing Document)  	>> decompressed_length = %i\n", decompressed_length);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Extract a header line and match it with the element name
+    // ---------------------------------------------------------------------------------------------------------------------
+    unsigned int LayerData::_get_element_value(const std::vector<unsigned char> &p_layer_content, const std::string &p_element_name, unsigned int &p_index) const
     {
         unsigned int element_int_value = -1;
         /* First extract the header element */
-        std::string element_value = _get_header_element(p_layer_content, p_index);
+        std::string element_value = _get_header_line(p_layer_content, p_index);
         /* Try to match the elementValue string */
         if (element_value.find(p_element_name) != std::string::npos)
         {
@@ -217,15 +209,15 @@ namespace kra
         }
         else
         {
-            printf("(Parsing Document) WARNING: Missing header element in tile with name '%s'\n", p_element_name.c_str());
+            fprintf(stdout, "WARNING: Missing header element in tile with name '%s'\n", p_element_name.c_str());
         }
         return element_int_value;
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // Extract a header element starting from the current_index until the next "0x0A".
+    // Extract a header line starting from the current_index until the next "0x0A"
     // ---------------------------------------------------------------------------------------------------------------------
-    std::string LayerData::_get_header_element(const std::vector<unsigned char> &p_layer_content, unsigned int &p_index)
+    std::string LayerData::_get_header_line(const std::vector<unsigned char> &p_layer_content, unsigned int &p_index) const
     {
         unsigned int begin_index = p_index;
         /* Just go through the vector until you encounter "0x0A" (= the hex value of Line Feed) */
@@ -243,7 +235,41 @@ namespace kra
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // Decompression function for LZF copied directly (with minor modifications) from the Krita codebase (libs\image\tiles3\swap\kis_lzf_compression.cpp).
+    // Go through all the tiles and find the layer's extents
+    // ---------------------------------------------------------------------------------------------------------------------
+    void LayerData::_update_dimensions()
+    {
+        /* Reset all the dimensions back to 0 */
+        top = 0;
+        left = 0;
+        bottom = 0;
+        right = 0;
+
+        /* Find the extents of the layer canvas */
+        for (auto const &tile : tiles)
+        {
+            if (tile->left < left)
+            {
+                left = tile->left;
+            }
+            if (tile->left + (int32_t)tile_width > right)
+            {
+                right = tile->left + (int32_t)tile_width;
+            }
+
+            if (tile->top < top)
+            {
+                top = tile->top;
+            }
+            if (tile->top + (int32_t)tile_height > bottom)
+            {
+                bottom = tile->top + (int32_t)tile_height;
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Decompression function for LZF copied directly (with minor modifications) from the Krita codebase (libs\image\tiles3\swap\kis_lzf_compression.cpp)
     // ---------------------------------------------------------------------------------------------------------------------
     int LayerData::_lzff_decompress(const void *input, const int length, void *output, int maxout) const
     {
