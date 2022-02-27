@@ -137,11 +137,11 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     void Document::print_document_attributes() const
     {
-        fprintf(stdout, "---------- Document attributes are extracted and have following values:\n");
-        fprintf(stdout, "(Document) >> name = %s\n", name.c_str());
-        fprintf(stdout, "(Document) >> width = %i\n", width);
-        fprintf(stdout, "(Document) >> height = %i\n", height);
-        fprintf(stdout, "(Document) >> color_space = %i\n", color_space);
+        fprintf(stdout, "----- Document attributes are extracted and have following values:\n");
+        fprintf(stdout, "   >> name = %s\n", name.c_str());
+        fprintf(stdout, "   >> width = %i\n", width);
+        fprintf(stdout, "   >> height = %i\n", height);
+        fprintf(stdout, "   >> color_space = %i\n", color_space);
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
@@ -152,6 +152,11 @@ namespace kra
         std::vector<std::unique_ptr<Layer>> layers;
         const tinyxml2::XMLElement *layers_element = xmlElement->FirstChildElement("layers");
         const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
+        
+        if (verbosity_level >= VERBOSE)
+        {
+            fprintf(stdout, "Recursively extracting layer attributes and data from 'maindoc.xml'...\n");
+        }
 
         /* Hopefully we find something... otherwise there are no layers! */
         /* Keep trying to find a layer until we can't find any new ones! */

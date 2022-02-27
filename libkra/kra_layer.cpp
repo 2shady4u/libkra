@@ -82,15 +82,15 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     void Layer::print_layer_attributes() const
     {
-        fprintf(stdout, "------- Layer attributes are extracted and have following values:\n");
-        fprintf(stdout, "(Layer) >> filename = %s\n", filename.c_str());
-        fprintf(stdout, "(Layer) >> name = %s\n", name.c_str());
-        fprintf(stdout, "(Layer) >> uuid = %s\n", uuid.c_str());
-        fprintf(stdout, "(Layer) >> x = %i\n", x);
-        fprintf(stdout, "(Layer) >> y = %i\n", y);
-        fprintf(stdout, "(Layer) >> opacity = %i\n", opacity);
-        fprintf(stdout, "(Layer) >> visible = %s\n", visible ? "true" : "false");
-        fprintf(stdout, "(Layer) >> type = %i\n", type);
+        fprintf(stdout, "----- Layer with name '%s' contains following values:\n", name.c_str());
+        fprintf(stdout, "   >> filename = %s\n", filename.c_str());
+        fprintf(stdout, "   >> name = %s\n", name.c_str());
+        fprintf(stdout, "   >> uuid = %s\n", uuid.c_str());
+        fprintf(stdout, "   >> x = %i\n", x);
+        fprintf(stdout, "   >> y = %i\n", y);
+        fprintf(stdout, "   >> opacity = %i\n", opacity);
+        fprintf(stdout, "   >> visible = %s\n", visible ? "true" : "false");
+        fprintf(stdout, "   >> type = %i\n", type);
 
         switch (type)
         {
@@ -185,8 +185,9 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     void Layer::_print_paint_layer_attributes() const
     {
-        fprintf(stdout, "(Layer) Additional attributes specific to PAINT_LAYER:\n");
-        fprintf(stdout, "(Layer) >> color_space = %i\n", color_space);
+        fprintf(stdout, "   -- Additional attributes specific to this layer's type (= PAINT_LAYER):\n");
+        fprintf(stdout, "   >> color_space = %i\n", color_space);
+        // TODO: Also print attributes of the layer_data!
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
@@ -194,11 +195,11 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     void Layer::_print_group_layer_attributes() const
     {
-        fprintf(stdout, "(Layer) Additional attributes specific to GROUP_LAYER:\n");
-        fprintf(stdout, "(Layer)  	>> my children are:\n");
+        fprintf(stdout, "   -- Additional attributes specific to this layer's type (= GROUP_LAYER):\n");
+        fprintf(stdout, "   >> children:\n");
         for (const auto &layer : children)
         {
-            fprintf(stdout, "(Layer)  	>> '%s'\n", layer->name.c_str());
+            fprintf(stdout, "      - '%s' (%s)\n", layer->name.c_str(), layer->uuid.c_str());
         }
     }
 };

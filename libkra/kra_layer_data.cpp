@@ -26,7 +26,8 @@ namespace kra
 
         if (verbosity_level >= VERBOSE)
         {
-            print_layer_data_attributes();
+            // TODO: This needs to be re-enabled at some point
+            // print_layer_data_attributes();
         }
 
         unsigned int number_of_tiles = _get_element_value(p_layer_content, "DATA ", current_index);
@@ -55,7 +56,7 @@ namespace kra
             /* The top position of the tile */
             base_sub_match = sm[2];
             tile->top = std::stoi(base_sub_match.str());
-            /* We don't really care about sm[3] since it is always 'LZF' */
+            /* NOTE: We don't really care about sm[3] since it is always 'LZF' */
             /* The number of compressed bytes coming after this header */
             base_sub_match = sm[4];
             tile->compressed_length = std::stoi(base_sub_match.str());
@@ -64,7 +65,7 @@ namespace kra
             std::vector<uint8_t> compressed_data(p_layer_content.begin() + current_index, p_layer_content.begin() + current_index + tile->compressed_length);
             tile->compressed_data = compressed_data;
 
-            /* Add the compressedLength to the current_index so the next tile starts at the correct position */
+            /* Add the compressed_length to the current_index so the next tile starts at the correct position */
             // Needs to be done BEFORE moving the pointer's ownership to the vector!
             current_index += tile->compressed_length;
 
@@ -96,11 +97,11 @@ namespace kra
             /* As follows: */
             /* 0 -> No compression, the data is actually raw! */
             /* 1 -> The data was compressed using LZF */
-            /* TODO: Actually implement a check to see this byte!!! */
+            // TODO: Figure out if this byte is actually used or not? If yes, we'll have to add some additional logic here
             _lzff_decompress(tile->compressed_data.data() + 1, tile->compressed_length, unsorted_data.data(), decompressed_length);
 
-            /* TODO: Krita might also normalize the colors in some way */
-            /* At some point we'll need to check this and denormalize the colors in some way! */
+            // TODO: Krita might also normalize the colors in some way which needs to be checked
+            // In this case the colors will have to be denormalized in some way or form!
 
             /* Data is saved in following format: */
             /* - Firstly all the RED data */
@@ -182,12 +183,13 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     void LayerData::print_layer_data_attributes() const
     {
-        fprintf(stdout, "----------- Tile properties (Main Header) are extracted and have following values:\n");
-        fprintf(stdout, "(LayerData) >> version = %i\n", version);
-        fprintf(stdout, "(LayerData) >> tile_width = %i\n", tile_width);
-        fprintf(stdout, "(LayerData) >> tile_height = %i\n", tile_height);
-        fprintf(stdout, "(LayerData) >> pixel_size = %i\n", pixel_size);
-        //printf("(Parsing Document)  	>> decompressed_length = %i\n", decompressed_length);
+        // TODO: This needs to be updated & expanded!
+        fprintf(stdout, "----- Tile properties (Main Header) are extracted and have following values:\n");
+        fprintf(stdout, "   >> version = %i\n", version);
+        fprintf(stdout, "   >> tile_width = %i\n", tile_width);
+        fprintf(stdout, "   >> tile_height = %i\n", tile_height);
+        fprintf(stdout, "   >> pixel_size = %i\n", pixel_size);
+        //fprintf(stdout, "   >> decompressed_length = %i\n", decompressed_length);
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
