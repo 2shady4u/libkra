@@ -28,17 +28,10 @@ namespace kra
 
     void KraLayer::_import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
-        const char *color_space_name = p_xml_element->Attribute("colorspacename");
+        std::string color_space_name = p_xml_element->Attribute("colorspacename");
         /* The color space defines the number of 'channels' */
         /* Each seperate layer can have its own color space in KRA, but this doesn't seem to used by default */
-        if (strcmp(color_space_name, "RGBA") == 0)
-        {
-            color_space = RGBA;
-        }
-        else if (strcmp(color_space_name, "CMYK") == 0)
-        {
-            color_space = CMYK;
-        }
+        color_space = get_color_space(color_space_name);
 
         /* Try and find the relevant file that defines this layer's tile data */
         /* This also automatically decrypts the tile data */

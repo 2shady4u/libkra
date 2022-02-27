@@ -41,4 +41,20 @@ namespace kra
 
         return (int)error_code;
     }
+
+    ColorSpace get_color_space(const std::string &p_color_space_name)
+    {
+        if (p_color_space_name.compare("RGBA") == 0)
+        {
+            return RGBA;
+        }
+        else if (p_color_space_name.compare("CMYK") == 0)
+        {
+            return CMYK;
+        }
+        else
+        {
+            return OTHER;
+        }
+    }
 };

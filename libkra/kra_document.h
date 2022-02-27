@@ -43,9 +43,10 @@ namespace kra
 	public:
 		std::string name;
 
-		unsigned int channel_count;
 		unsigned int width;
 		unsigned int height;
+
+		ColorSpace color_space;
 
 		std::vector<std::unique_ptr<KraLayer>> layers;
 

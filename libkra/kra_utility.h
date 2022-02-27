@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <vector>
+#include <string>
 
 #define WRITEBUFFERSIZE (8192)
 
@@ -19,7 +20,8 @@ namespace kra
     enum ColorSpace
     {
         RGBA,
-        CMYK
+        CMYK,
+        OTHER
     };
 
     enum VerbosityLevel
@@ -33,6 +35,8 @@ namespace kra
     extern VerbosityLevel verbosity_level;
 
     int extract_current_file_to_vector(unzFile &p_file, std::vector<unsigned char> &p_result);
+
+    ColorSpace get_color_space(const std::string &p_color_space_name);
 };
 
 #endif // KRA_UTILITY_H

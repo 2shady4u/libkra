@@ -8,11 +8,11 @@ namespace kra
     void KraDocument::load(const std::wstring &p_path)
     {
         /* Convert wstring to string */
-        std::string sFilename = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(p_path);
-        const char *path = sFilename.c_str();
+        std::string string_path = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(p_path);
+        const char *char_path = string_path.c_str();
 
         /* Open the KRA archive using minizip */
-        unzFile file = unzOpen(path);
+        unzFile file = unzOpen(char_path);
         if (file == NULL)
         {
             printf("(Parsing Document) ERROR: Failed to open KRA archive.\n");
@@ -43,26 +43,16 @@ namespace kra
         width = xml_element->UnsignedAttribute("width", 0);
         height = xml_element->UnsignedAttribute("height", 0);
         name = xml_element->Attribute("name");
-        const char *colorSpaceName = xml_element->Attribute("colorspacename");
+        std::string color_space_name = xml_element->Attribute("colorspacename");
         /* The color space defines the number of 'channels' */
-        /* Each separate layer has its own color space in KRA, so not sure if this necessary... */
-        if (strcmp(colorSpaceName, "RGBA") == 0)
-        {
-            channel_count = 4u;
-        }
-        else if (strcmp(colorSpaceName, "RGB") == 0)
-        {
-            channel_count = 3u;
-        }
-        else
-        {
-            channel_count = 0u;
-        }
+        /* Each separate layer also has its own color space in KRA, so not sure why this is here? */
+        color_space = get_color_space(color_space_name);
+
         printf("(Parsing Document) Document properties are extracted and have following values:\n");
         printf("(Parsing Document)  	>> name = %s\n", name.c_str());
         printf("(Parsing Document)  	>> width = %i\n", width);
         printf("(Parsing Document)  	>> height = %i\n", height);
-        printf("(Parsing Document)  	>> channel_count = %i\n", channel_count);
+        printf("(Parsing Document)  	>> color_space = %i\n", color_space);
 
         /* Parse all the layers registered in the maindoc.xml and add them to the document */
         layers = _parse_layers(file, xml_element);
