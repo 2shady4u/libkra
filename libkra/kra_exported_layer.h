@@ -17,11 +17,11 @@ namespace kra
     class KraExportedLayer
     {
     public:
-        kra::LayerType type;
+        LayerType type;
+        ColorSpace color_space;
 
         std::string name;
 
-        unsigned int channel_count;
         unsigned int x;
         unsigned int y;
 
@@ -33,6 +33,8 @@ namespace kra
         uint8_t opacity;
 
         bool visible;
+
+        unsigned int pixel_size;
 
         std::unique_ptr<uint8_t[]> data;
 

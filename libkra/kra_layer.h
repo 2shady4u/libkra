@@ -31,8 +31,8 @@ namespace kra
     private:
         void _parse_tiles(std::vector<unsigned char> p_content);
 
-        unsigned int _parse_header_element(std::vector<unsigned char> p_layer_content, const std::string &p_element_name, unsigned int &p_index);
-        std::string _get_header_element(std::vector<unsigned char> p_layer_content, unsigned int &p_index);
+        unsigned int _parse_header_element(const std::vector<unsigned char> &p_layer_content, const std::string &p_element_name, unsigned int &p_index);
+        std::string _get_header_element(const std::vector<unsigned char> &p_layer_content, unsigned int &p_index);
         int _lzff_decompress(const void *input, int length, void *output, int maxout);
 
         void _import_paint_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
@@ -41,13 +41,13 @@ namespace kra
         void _print_group_layer_attributes() const;
 
     public:
-        kra::LayerType type;
+        LayerType type;
+        ColorSpace color_space = RGBA;
 
         std::string filename;
         std::string name;
         std::string uuid;
 
-        unsigned int channel_count;
         unsigned int x;
         unsigned int y;
 

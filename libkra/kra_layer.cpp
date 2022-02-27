@@ -30,18 +30,14 @@ namespace kra
     {
         const char *color_space_name = p_xml_element->Attribute("colorspacename");
         /* The color space defines the number of 'channels' */
-        /* Each seperate layer has its own color space in KRA, so not sure if this necessary... */
+        /* Each seperate layer can have its own color space in KRA, but this doesn't seem to used by default */
         if (strcmp(color_space_name, "RGBA") == 0)
         {
-            channel_count = 4u;
+            color_space = RGBA;
         }
-        else if (strcmp(color_space_name, "RGB") == 0)
+        else if (strcmp(color_space_name, "CMYK") == 0)
         {
-            channel_count = 3u;
-        }
-        else
-        {
-            channel_count = 0u;
+            color_space = CMYK;
         }
 
         /* Try and find the relevant file that defines this layer's tile data */
@@ -113,7 +109,7 @@ namespace kra
         printf("(Parsing Document)  	>> filename = %s\n", filename.c_str());
         printf("(Parsing Document)  	>> name = %s\n", name.c_str());
         printf("(Parsing Document)  	>> uuid = %s\n", uuid.c_str());
-        printf("(Parsing Document)  	>> channel_count = %i\n", channel_count);
+        printf("(Parsing Document)  	>> color_space = %i\n", color_space);
         printf("(Parsing Document)  	>> x = %i\n", x);
         printf("(Parsing Document)  	>> y = %i\n", y);
         printf("(Parsing Document)  	>> opacity = %i\n", opacity);
@@ -145,12 +141,14 @@ namespace kra
 
         /* Copy all important properties immediately */
         exported_layer->name = name;
-        exported_layer->channel_count = channel_count;
+        exported_layer->color_space = color_space;
         exported_layer->x = x;
         exported_layer->y = y;
         exported_layer->opacity = opacity;
         exported_layer->visible = visible;
         exported_layer->type = type;
+
+        exported_layer->pixel_size = pixel_size;
 
         /* Initialize the extents of this layer to 0 */
         exported_layer->left = 0;
@@ -294,18 +292,15 @@ namespace kra
 
             /* sm[0] is the full string match which we don't need */
             /* The left position of the tile */
-            std::stringstream strValue;
-            strValue << sm[1];
-            strValue >> tile->left;
+            std::ssub_match base_sub_match = sm[1];
+            tile->left = std::stoi(base_sub_match.str());
             /* The top position of the tile */
-            strValue.clear();
-            strValue << sm[2];
-            strValue >> tile->top;
+            base_sub_match = sm[2];
+            tile->top = std::stoi(base_sub_match.str());
             /* We don't really care about sm[3] since it is always 'LZF' */
             /* The number of compressed bytes coming after this header */
-            strValue.clear();
-            strValue << sm[4];
-            strValue >> tile->compressed_length;
+            base_sub_match = sm[4];
+            tile->compressed_length = std::stoi(base_sub_match.str());
 
             /* Put all the data in a vector */
             std::vector<unsigned char> data_vector(p_layer_content.begin() + current_index, p_layer_content.begin() + current_index + tile->compressed_length);
@@ -376,7 +371,7 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Extract a header element and match it with the element name.
     // ---------------------------------------------------------------------------------------------------------------------
-    unsigned int KraLayer::_parse_header_element(std::vector<unsigned char> p_layer_content, const std::string &p_element_name, unsigned int &p_index)
+    unsigned int KraLayer::_parse_header_element(const std::vector<unsigned char> &p_layer_content, const std::string &p_element_name, unsigned int &p_index)
     {
         unsigned int element_int_value = -1;
         /* First extract the header element */
@@ -387,10 +382,8 @@ namespace kra
             size_t pos = element_value.find(p_element_name);
             /* If found then erase it from string */
             element_value.erase(pos, p_element_name.length());
-            /* Dump it into the output variable using stringstream */
-            std::stringstream strValue;
-            strValue << element_value;
-            strValue >> element_int_value;
+            /* Dump it into the output variable using stoi */
+            element_int_value = std::stoi(element_value);
         }
         else
         {
@@ -402,7 +395,7 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Extract a header element starting from the current_index until the next "0x0A".
     // ---------------------------------------------------------------------------------------------------------------------
-    std::string KraLayer::_get_header_element(std::vector<unsigned char> p_layer_content, unsigned int &p_index)
+    std::string KraLayer::_get_header_element(const std::vector<unsigned char> &p_layer_content, unsigned int &p_index)
     {
         unsigned int begin_index = p_index;
         /* Just go through the vector until you encounter "0x0A" (= the hex value of Line Feed) */
@@ -412,14 +405,7 @@ namespace kra
         }
         unsigned int end_index = p_index;
         /* Extract this header element */
-        std::vector<unsigned char> element_content(p_layer_content.begin() + begin_index, p_layer_content.begin() + end_index);
-        /* Print it... should be disabled at some point */
-        for (std::vector<int>::size_type i = 0; i < element_content.size(); i++)
-        {
-            std::cout << element_content.at(i) << ' ';
-        }
-        std::cout << "\n";
-        std::string element_value(reinterpret_cast<char *>(element_content.data()), end_index - begin_index);
+        std::string element_value(p_layer_content.begin() + begin_index, p_layer_content.begin() + end_index);
         /* Increment the current_index pointer so that we skip the "0x0A" character */
         p_index++;
 

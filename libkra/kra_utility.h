@@ -16,6 +16,12 @@ namespace kra
         GROUP_LAYER
     };
 
+    enum ColorSpace
+    {
+        RGBA,
+        CMYK
+    };
+
     enum VerbosityLevel
     {
         QUIET,
