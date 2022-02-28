@@ -15,17 +15,9 @@
 #include "../tinyxml2/tinyxml2.h"
 #include "../zlib/contrib/minizip/unzip.h"
 
-#include <stddef.h>
-#include <string>
-#include <cstring>
-#include <vector>
-#include <algorithm>
-#include <iostream>
-
-#include <locale>
-#include <codecvt>
-#include <memory>
 #include <unordered_map>
+#include <codecvt>
+#include <locale>
 
 namespace kra
 {

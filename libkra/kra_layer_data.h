@@ -10,8 +10,6 @@
 #include "kra_utility.h"
 
 #include <memory>
-#include <vector>
-#include <string>
 #include <regex>
 
 #define WRITEBUFFERSIZE (8192)

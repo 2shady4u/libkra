@@ -7,8 +7,6 @@
 #ifndef KRA_EXPORTED_LAYER_H
 #define KRA_EXPORTED_LAYER_H
 
-#include <string>
-
 namespace kra
 {
     // This class represents an exported version of a Layer */

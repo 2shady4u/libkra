@@ -15,12 +15,6 @@
 #include "../tinyxml2/tinyxml2.h"
 #include "../zlib/contrib/minizip/unzip.h"
 
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <regex>
-
 namespace kra
 {
     /* This class stores the attributes (as found in 'maindoc.xml') for a single layer */
