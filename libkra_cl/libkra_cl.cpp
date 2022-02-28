@@ -5,19 +5,20 @@
 // See LICENSE in the project root for license information.
 // ############################################################################ #
 
-#include "../Kra/KraDocument.h"
-#include "../Kra/KraExportedLayer.h"
-#include "../Kra/KraParseDocument.h"
-#include "../Kra/KraExport.h"
+#include "../libkra/kra_utility.h"
 
-#include "../../libpng/png.h"
+#include "../libkra/kra_document.h"
+#include "../libkra/kra_exported_layer.h"
 
-KRA_USING_NAMESPACE;
+#include "../libpng/png.h"
+
+#include <iostream>
+#include <sstream>
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Here the data gets exported and saved as a png using the libpng library.
 // ---------------------------------------------------------------------------------------------------------------------
-bool writeImage(const wchar_t *filename, unsigned int width, unsigned int height, const uint8_t *data)
+bool writeImage(const char *filename, unsigned int width, unsigned int height, const uint8_t *data)
 {
 
 	bool success = true;
@@ -29,11 +30,8 @@ bool writeImage(const wchar_t *filename, unsigned int width, unsigned int height
 	unsigned int channelCount = 4;
 	int colorType = PNG_COLOR_TYPE_RGBA;
 
-	std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(filename);
-	const char *cFilename = str.c_str();
-
 	// Open file for writing (binary mode)
-	fp = fopen(cFilename, "wb");
+	fp = fopen(filename, "wb");
 	if (fp == NULL)
 	{
 		std::cout << "Could not open file " << filename << " for writing" << std::endl;
@@ -107,30 +105,55 @@ finalise:
 	return success;
 }
 
+void save_layer_to_image(const std::unique_ptr<kra::ExportedLayer> &layer)
+{
+	unsigned int layer_width = (unsigned int)(layer->right - layer->left);
+	unsigned int layer_height = (unsigned int)(layer->bottom - layer->top);
+	// std::unique_ptr<uint8_t[]> data = std::move(layer->data);
+	/* Export the layer's data to a texture */
+	std::stringstream ssFilename;
+	ssFilename << layer->name;
+	ssFilename << ".png";
+	/* TODO: Add the actual exporting functionality here! */
+	writeImage(ssFilename.str().c_str(), layer_width, layer_height, layer->data.data());
+}
+
+void process_layer(const std::unique_ptr<kra::Document> &document, const std::unique_ptr<kra::ExportedLayer> &layer)
+{
+	switch (layer->type)
+	{
+	case kra::PAINT_LAYER:
+	{
+		save_layer_to_image(layer);
+		break;
+	}
+	case kra::GROUP_LAYER:
+		for (auto const &uuid : layer->child_uuids)
+		{
+			std::unique_ptr<kra::ExportedLayer> child = document->get_exported_layer_with_uuid(uuid);
+
+			process_layer(document, child);
+		}
+		break;
+	}
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 int ExampleReadKra(std::wstring rawFile)
 {
-	std::unique_ptr<KraDocument> document = CreateKraDocument(rawFile);
+	std::unique_ptr<kra::Document> document = std::make_unique<kra::Document>();
+	document->load(rawFile);
 	if (document == NULL)
 	{
 		return 1;
 	}
 
-	std::vector<std::unique_ptr<KraExportedLayer>> exportedLayers = CreateKraExportLayers(document);
+	std::vector<std::unique_ptr<kra::ExportedLayer>> exported_layers = document->get_all_exported_layers();
 
-	for (auto const &layer : exportedLayers)
+	for (auto const &layer : exported_layers)
 	{
-		const wchar_t *layerName = layer->name;
-		unsigned int layerHeight = (unsigned int)(layer->bottom - layer->top);
-		unsigned int layerWidth = (unsigned int)(layer->right - layer->left);
-		// std::unique_ptr<uint8_t[]> data = std::move(layer->data);
-		/* Export the layer's data to a texture */
-		std::wstringstream ssFilename;
-		ssFilename << layerName;
-		ssFilename << L".png";
-		/* TODO: Add the actual exporting functionality here! */
-		writeImage(ssFilename.str().c_str(), layerWidth, layerHeight, layer->data.get());
+		process_layer(document, layer);
 	}
 
 	return 0;
@@ -142,7 +165,9 @@ static void show_usage(std::string name)
 			  << "\n"
 			  << "General options:\n"
 			  << "  -h, --help                       Display this help message.\n"
-			  << "  -s,--source <source>             Specify the KRA source file.\n";
+			  << "  -s, --source <source>            Specify the KRA source file.\n"
+			  << "  -q, --quiet                      Do not print anything in the console.\n"
+			  << "  -v, --verbose                    Print additional logs in the console.\n";
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -172,6 +197,14 @@ int main(int argc, const char *argv[])
 				std::cerr << "--source option requires one argument." << std::endl;
 				return 1;
 			}
+		}
+		else if ((arg == "-q") || (arg == "--quiet"))
+		{
+			kra::verbosity_level = kra::QUIET;	
+		}
+		else if ((arg == "-v") || (arg == "--verbose"))
+		{
+			kra::verbosity_level = kra::VERBOSE;
 		}
 		else
 		{
