@@ -57,6 +57,18 @@ namespace kra
         {
             return RGBA;
         }
+        else if (p_color_space_name.compare("RGBA16") == 0)
+        {
+            return RGBA16;
+        }
+        else if (p_color_space_name.compare("RGBAF16") == 0)
+        {
+            return RGBAF16;
+        }
+        else if (p_color_space_name.compare("RGBAF32") == 0)
+        {
+            return RGBAF32;
+        }
         else if (p_color_space_name.compare("CMYK") == 0)
         {
             return CMYK;

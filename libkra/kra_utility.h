@@ -25,6 +25,9 @@ namespace kra
     enum ColorSpace
     {
         RGBA,
+        RGBA16,
+        RGBAF16,
+        RGBAF32,
         CMYK,
         OTHER
     };
