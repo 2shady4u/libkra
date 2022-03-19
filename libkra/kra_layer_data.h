@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <regex>
+#include <numeric>
 
 #define WRITEBUFFERSIZE (8192)
 
@@ -62,7 +63,7 @@ namespace kra
 
         void import_attributes(const std::vector<unsigned char> &p_layer_content);
 
-        std::vector<uint8_t> get_composed_data() const;
+        std::vector<uint8_t> get_composed_data(ColorSpace color_space) const;
 
         unsigned int get_width() const;
         unsigned int get_height() const;

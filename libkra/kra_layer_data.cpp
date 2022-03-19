@@ -76,9 +76,9 @@ namespace kra
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // Decompress & compose the binary data of the entire layer 
+    // Decompress & compose the binary data of the entire layer
     // ---------------------------------------------------------------------------------------------------------------------
-    std::vector<uint8_t> LayerData::get_composed_data() const
+    std::vector<uint8_t> LayerData::get_composed_data(ColorSpace color_space) const
     {
         /* Allocate space for the output data! */
         const unsigned int decompressed_length = pixel_size * tile_width * tile_height;
@@ -97,35 +97,38 @@ namespace kra
             /* As follows: */
             /* 0 -> No compression, the data is actually raw! */
             /* 1 -> The data was compressed using LZF */
-            // TODO: Figure out if this byte is actually used or not? If yes, we'll have to add some additional logic here
+            // NOTE: At the time of writing this byte cannot be changed from its default value (1) and thus the data will ALWAYS be compressed.
             _lzff_decompress(tile->compressed_data.data() + 1, tile->compressed_length, unsorted_data.data(), decompressed_length);
 
-            // TODO: Krita might also normalize the colors in some way which needs to be checked
-            // In this case the colors will have to be denormalized in some way or form!
+            // TODO: Conversion between color profiles could potentially be done here?
+
+            /* Due to historical reasons the red and blue pixel values are swapped in the case of RGBA */
+            /* This is to be rectified by using a special vector with swapped values */
+            std::vector<unsigned int> pixel_vector(pixel_size);
+            std::iota(std::begin(pixel_vector), std::end(pixel_vector), 0);
+            if (color_space == ColorSpace::RGBA)
+            {
+                unsigned int bytes_per_channel = 1;
+                std::swap_ranges(pixel_vector.begin(), pixel_vector.begin() + bytes_per_channel, pixel_vector.begin() + 2 * bytes_per_channel);
+            }
 
             /* Data is saved in following format: */
-            /* - Firstly all the RED data */
-            /* - Secondly all the GREEN data */
-            /* - Thirdly all the BLUE data */
-            /* - Fourthly all the ALPHA data */
-            /* This is different from the common format which requires quartets of: */
-            /* R1, G1, B1, A1, R2, G2, ... etc */
-            /* We'll just sort this here!*/
+            /* (R0 R1 R2...) (G0 G1 G2...) (B0 B1 B2...) (A0 A1 A2...)*/
+            /* which is different from the wanted format: */
+            /* (R0 G0 B0 A0) (R1 G1 B1 A1) (R2 G2 B2 A2)...*/
+
+            /* We'll have to do some sorting as a result!*/
             std::vector<uint8_t> sorted_data(decompressed_length);
-            int jj = 0;
             int tile_area = tile_height * tile_width;
             for (int i = 0; i < tile_area; i++)
             {
-                sorted_data[jj + 0] = unsorted_data[2 * tile_area + i]; // RED CHANNEL
-                sorted_data[jj + 1] = unsorted_data[1 * tile_area + i]; // GREEN CHANNEL
-                sorted_data[jj + 2] = unsorted_data[0 * tile_area + i]; // BLUE CHANNEL
-                sorted_data[jj + 3] = unsorted_data[3 * tile_area + i]; // ALPHA CHANNEL
-                jj += 4;
+                unsigned int real_index = 0;
+                for (unsigned int j : pixel_vector)
+                {
+                    sorted_data[i * pixel_size + real_index] = unsorted_data[j * tile_area + i];
+                    real_index++;
+                }
             }
-            /* NOTE: Obviously this need to be adjusted when working with other color spaces! */
-
-            /* Q: Why are the RED and BLUE channels swapped? */
-            /* A: I have no clue... that's how it is saved in the tile! */
 
             /* Now we have to construct the data in such a way that all tiles are in the correct positions */
             const int relative_tile_top = tile->top - top;
@@ -189,7 +192,7 @@ namespace kra
         fprintf(stdout, "   >> tile_width = %i\n", tile_width);
         fprintf(stdout, "   >> tile_height = %i\n", tile_height);
         fprintf(stdout, "   >> pixel_size = %i\n", pixel_size);
-        //fprintf(stdout, "   >> decompressed_length = %i\n", decompressed_length);
+        // fprintf(stdout, "   >> decompressed_length = %i\n", decompressed_length);
     }
 
     // ---------------------------------------------------------------------------------------------------------------------

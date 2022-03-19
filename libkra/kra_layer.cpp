@@ -63,7 +63,7 @@ namespace kra
 
             exported_layer->pixel_size = layer_data->pixel_size;
 
-            exported_layer->data = layer_data->get_composed_data();
+            exported_layer->data = layer_data->get_composed_data(color_space);
             break;
         }
         case GROUP_LAYER:
