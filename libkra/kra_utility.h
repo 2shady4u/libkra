@@ -45,6 +45,8 @@ namespace kra
     int extract_current_file_to_vector(unzFile &p_file, std::vector<unsigned char> &p_result);
 
     ColorSpace get_color_space(const std::string &p_color_space_name);
+
+    const std::string get_color_space_name(ColorSpace p_color_space);
 };
 
 #endif // KRA_UTILITY_H

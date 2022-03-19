@@ -78,4 +78,26 @@ namespace kra
             return OTHER;
         }
     }
+    
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Get a human-readable string version of the given ColorSpace-enum
+    // ---------------------------------------------------------------------------------------------------------------------
+    const std::string get_color_space_name(ColorSpace p_color_space)
+    {
+        switch(p_color_space)
+        {
+            case RGBA:
+                return "RGBA";
+            case RGBA16:
+                return "RGBA16";
+            case RGBAF16:
+                return "RGBAF16";
+            case RGBAF32:
+                return "RGBAF32";
+            case CMYK:
+                return "CMYK";
+            default:
+                return "not supported";
+        }
+    }
 };
