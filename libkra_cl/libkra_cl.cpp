@@ -1,6 +1,5 @@
 // ############################################################################ #
-// Copyright © 2020 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
-// Copyright © 2020 Gamechuck d.o.o. <gamechuckdev@gmail.com>
+// Copyright © 2022 Piet Bronders & Jeroen De Geeter <piet.bronders@gmail.com>
 // Licensed under the MIT License.
 // See LICENSE in the project root for license information.
 // ############################################################################ #
@@ -13,14 +12,12 @@
 #include "../libpng/png.h"
 
 #include <iostream>
-#include <sstream>
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Here the data gets exported and saved as a png using the libpng library.
+// Export and save as a *.png-file with the help of the libpng-library.
 // ---------------------------------------------------------------------------------------------------------------------
-bool writeImage(const char *filename, unsigned int width, unsigned int height, const uint8_t *data)
+bool write_data_to_png(const char *filename, unsigned int width, unsigned int height, const uint8_t *data)
 {
-
 	bool success = true;
 	FILE *fp = NULL;
 	png_structp png_ptr = NULL;
@@ -105,19 +102,22 @@ finalise:
 	return success;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Get the important layer data and write this data to a .png-file
+// ---------------------------------------------------------------------------------------------------------------------
 void save_layer_to_image(const std::unique_ptr<kra::ExportedLayer> &layer)
 {
 	unsigned int layer_width = (unsigned int)(layer->right - layer->left);
 	unsigned int layer_height = (unsigned int)(layer->bottom - layer->top);
-	// std::unique_ptr<uint8_t[]> data = std::move(layer->data);
+	const std::string file_name = layer->name + ".png";
+
 	/* Export the layer's data to a texture */
-	std::stringstream ssFilename;
-	ssFilename << layer->name;
-	ssFilename << ".png";
-	/* TODO: Add the actual exporting functionality here! */
-	writeImage(ssFilename.str().c_str(), layer_width, layer_height, layer->data.data());
+	write_data_to_png(file_name.c_str(), layer_width, layer_height, layer->data.data());
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Process each layer and, depending on the type, either call the saving method or recursively call this method again.
+// ---------------------------------------------------------------------------------------------------------------------
 void process_layer(const std::unique_ptr<kra::Document> &document, const std::unique_ptr<kra::ExportedLayer> &layer)
 {
 	switch (layer->type)
@@ -139,28 +139,41 @@ void process_layer(const std::unique_ptr<kra::Document> &document, const std::un
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Export the document as found at the given path
 // ---------------------------------------------------------------------------------------------------------------------
-int ExampleReadKra(std::wstring rawFile)
+int export_document(std::wstring p_file_name)
 {
 	std::unique_ptr<kra::Document> document = std::make_unique<kra::Document>();
-	document->load(rawFile);
+	document->load(p_file_name);
 	if (document == NULL)
 	{
 		return 1;
 	}
 
-	std::vector<std::unique_ptr<kra::ExportedLayer>> exported_layers = document->get_all_exported_layers();
-
-	for (auto const &layer : exported_layers)
+	switch (document->color_space)
 	{
-		process_layer(document, layer);
+	case kra::ColorSpace::RGBA:
+	{
+		std::vector<std::unique_ptr<kra::ExportedLayer>> exported_layers = document->get_all_exported_layers();
+		for (auto const &layer : exported_layers)
+		{
+			process_layer(document, layer);
+		}
+		return 0;
 	}
-
-	return 0;
+	default:
+		// NOTE: 16-bit integer images (RGBA16) can definitely be exported to PNG, but this is not implemented!
+		std::fprintf(stderr, "ERROR: Document with color space name '%s' cannot be exported to PNG.\n", kra::get_color_space_name(document->color_space).c_str());
+		return 1;
+	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 static void show_usage(std::string name)
 {
+	// TODO: Allow multiple sources!
+	// TODO: Add a destination option at some point!
 	std::cerr << "Usage: " << name << " [options]\n"
 			  << "\n"
 			  << "General options:\n"
@@ -175,7 +188,9 @@ static void show_usage(std::string name)
 int main(int argc, const char *argv[])
 {
 	std::vector<std::string> sources;
-	std::wstring rawFile = L"..\\..\\bin\\KRAExample.kra";
+	// NOTE: Maybe we shouldn't hardcode this? This is here mainly for debugging purposes.
+	std::wstring file_name = L"..\\examples\\example_RGBA.kra";
+
 	for (int i = 1; i < argc; ++i)
 	{
 		std::string arg = argv[i];
@@ -190,7 +205,7 @@ int main(int argc, const char *argv[])
 			if (i + 1 < argc)
 			{
 				std::string str = argv[i + 1]; // Increment 'i' so we don't get the argument as the next argv[i].
-				rawFile = std::wstring(str.begin(), str.end());
+				file_name = std::wstring(str.begin(), str.end());
 			}
 			else
 			{ // Uh-oh, there was no argument to the source option.
@@ -200,7 +215,7 @@ int main(int argc, const char *argv[])
 		}
 		else if ((arg == "-q") || (arg == "--quiet"))
 		{
-			kra::verbosity_level = kra::QUIET;	
+			kra::verbosity_level = kra::QUIET;
 		}
 		else if ((arg == "-v") || (arg == "--verbose"))
 		{
@@ -212,12 +227,10 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	const int result = export_document(file_name);
+	if (result != 0)
 	{
-		const int result = ExampleReadKra(rawFile);
-		if (result != 0)
-		{
-			return result;
-		}
+		return result;
 	}
 
 	return 0;
