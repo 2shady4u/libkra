@@ -9,8 +9,9 @@
 
 #include "../zlib/contrib/minizip/unzip.h"
 
-#include <vector>
+#include <cstring> // std::memcpy
 #include <string>
+#include <vector>
 
 #define WRITEBUFFERSIZE (8192)
 
