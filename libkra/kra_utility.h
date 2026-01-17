@@ -10,6 +10,7 @@
 #include "../zlib/contrib/minizip/unzip.h"
 
 #include <cstring> // std::memcpy
+#include <cstdint>
 #include <string>
 #include <vector>
 
