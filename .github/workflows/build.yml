@@ -20,14 +20,17 @@ jobs:
         include:
           - name: Windows Compilation
             os: "windows-latest"
+            platform: "windows"
             artifact-name: win64
 
           - name: Ubuntu Compilation
-            os: "ubuntu-20.04"
+            os: "ubuntu-22.04"
+            platform: "linux"
             artifact-name: linux
 
           - name: MacOS Compilation
-            os: "macos-11"
+            os: "macos-latest"
+            platform: "osx"
             artifact-name: osx
 
     steps:
@@ -73,10 +76,10 @@ jobs:
           mkdir -v -p ${{env.PROJECT_FOLDER}}/${{env.TARGET_PATH}}
           cd ${{env.PROJECT_FOLDER}}
           cp "libpng/scripts/pnglibconf.h.prebuilt" "libpng/pnglibconf.h"
-          scons platform=linux target=${{env.TARGET}} target_path=${{env.TARGET_PATH}} target_name=${{env.TARGET_NAME}}
+          scons platform=${{matrix.platform}} target=${{env.TARGET}} target_path=${{env.TARGET_PATH}} target_name=${{env.TARGET_NAME}}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{env.PROJECT_FOLDER}}/${{env.TARGET_PATH}}
