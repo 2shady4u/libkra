@@ -18,6 +18,11 @@ namespace kra
         name = p_xml_element->Attribute("name");
         uuid = p_xml_element->Attribute("uuid");
 
+        const char* value = p_xml_element->Attribute("keyframes");
+        if (value) {
+            keyframes = value;
+        }
+
         x = p_xml_element->UnsignedAttribute("x", 0);
         y = p_xml_element->UnsignedAttribute("y", 0);
         opacity = p_xml_element->UnsignedAttribute("opacity", 0);
@@ -78,6 +83,40 @@ namespace kra
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
+    // ???
+    // ---------------------------------------------------------------------------------------------------------------------
+    std::vector<std::unique_ptr<ExportedLayer>> Layer::get_exported_frames() const {
+        std::vector<std::unique_ptr<ExportedLayer>> exported_frames;
+
+        for (auto const &keyframe: keyframes_data) {
+            std::unique_ptr<ExportedLayer> exported_layer = std::make_unique<ExportedLayer>();
+
+            /* Copy all important properties immediately */
+            exported_layer->name = keyframe->frame;
+            exported_layer->x = x;
+            exported_layer->y = y;
+            exported_layer->opacity = opacity;
+            exported_layer->visible = visible;
+            exported_layer->type = type;
+
+            exported_layer->color_space = color_space;
+
+            exported_layer->top = keyframe->layer_data->get_top();
+            exported_layer->left = keyframe->layer_data->get_left();
+            exported_layer->bottom = keyframe->layer_data->get_bottom();
+            exported_layer->right = keyframe->layer_data->get_right();
+
+            exported_layer->pixel_size = keyframe->layer_data->pixel_size;
+
+            exported_layer->data = keyframe->layer_data->get_composed_data(color_space);
+
+            exported_frames.push_back(std::move(exported_layer));
+        }
+
+        return exported_frames;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
     // Print layer attributes to the output console
     // ---------------------------------------------------------------------------------------------------------------------
     void Layer::print_layer_attributes() const
@@ -86,6 +125,7 @@ namespace kra
         fprintf(stdout, "   >> filename = %s\n", filename.c_str());
         fprintf(stdout, "   >> name = %s\n", name.c_str());
         fprintf(stdout, "   >> uuid = %s\n", uuid.c_str());
+        fprintf(stdout, "   >> keyframes = %s\n", keyframes.c_str());
         fprintf(stdout, "   >> x = %i\n", x);
         fprintf(stdout, "   >> y = %i\n", y);
         fprintf(stdout, "   >> opacity = %i\n", opacity);
@@ -130,6 +170,10 @@ namespace kra
         else
         {
             fprintf(stdout, "ERROR: Layer entry with path '%s' could not be found in KRA archive.\n", layer_path.c_str());
+        }
+
+        if (!keyframes.empty()) {
+            keyframes_data = _parse_keyframes(p_name, p_file);
         }
     }
 
@@ -178,6 +222,55 @@ namespace kra
                 layer_node = nextSibling->ToElement();
             }
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ???
+    // ---------------------------------------------------------------------------------------------------------------------
+    std::vector<std::unique_ptr<Keyframe>> Layer::_parse_keyframes(const std::string &p_name, unzFile &p_file)
+    {
+        std::vector<std::unique_ptr<Keyframe>> keyframes_data;
+
+        const std::string &keyframes_path = p_name + "/layers/" + keyframes;
+        std::vector<unsigned char> keyframes_content;
+        const char *c_path = keyframes_path.c_str();
+
+        int errorCode = unzLocateFile(p_file, c_path, 1);
+        errorCode += extract_current_file_to_vector(p_file, keyframes_content);
+        if (errorCode != UNZ_OK)
+        {
+            return keyframes_data;
+        }
+
+        /* Convert the vector into a string and parse it using tinyXML2 */
+        const std::string xml_string(keyframes_content.begin(), keyframes_content.end());
+        tinyxml2::XMLDocument xml_document;
+        xml_document.Parse(xml_string.c_str());
+
+        const tinyxml2::XMLElement *keyframes_element = xml_document.FirstChildElement("keyframes")->FirstChildElement("channel");
+        const tinyxml2::XMLElement *keyframe_node = keyframes_element->FirstChild()->ToElement();
+
+        /* Hopefully we find something... otherwise there are no keyframes! */
+        /* Keep trying to find a keyframe until we can't find any new ones! */
+        while (keyframe_node != 0)
+        {
+            std::unique_ptr<Keyframe> keyframe = std::make_unique<Keyframe>();
+            keyframe->import_attributes(p_name, p_file, keyframe_node);
+            keyframes_data.push_back(std::move(keyframe));
+
+            /* Try to get the next layer entry... if not available break */
+            const tinyxml2::XMLNode *nextSibling = keyframe_node->NextSibling();
+            if (nextSibling == 0)
+            {
+                break;
+            }
+            else
+            {
+                keyframe_node = nextSibling->ToElement();
+            }
+        }
+
+        return keyframes_data;
     }
 
     // ---------------------------------------------------------------------------------------------------------------------

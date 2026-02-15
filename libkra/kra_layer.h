@@ -9,6 +9,7 @@
 
 #include "kra_utility.h"
 
+#include "kra_keyframe.h"
 #include "kra_layer_data.h"
 #include "kra_exported_layer.h"
 
@@ -28,10 +29,13 @@ namespace kra
         void _print_paint_layer_attributes() const;
         void _print_group_layer_attributes() const;
 
+        std::vector<std::unique_ptr<Keyframe>> _parse_keyframes(const std::string &p_name, unzFile &p_file);
+
     public:
         std::string filename;
         std::string name;
         std::string uuid;
+        std::string keyframes;
 
         unsigned int x;
         unsigned int y;
@@ -45,6 +49,7 @@ namespace kra
         // PAINT_LAYER
         ColorSpace color_space = RGBA;
         std::unique_ptr<LayerData> layer_data;
+        std::vector<std::unique_ptr<Keyframe>> keyframes_data;
 
         // GROUP_LAYER
         std::vector<std::unique_ptr<Layer>> children;
@@ -52,6 +57,7 @@ namespace kra
         void import_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element);
 
         std::unique_ptr<ExportedLayer> get_exported_layer() const;
+        std::vector<std::unique_ptr<ExportedLayer>> get_exported_frames() const;
 
         void print_layer_attributes() const;
     };

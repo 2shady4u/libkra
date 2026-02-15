@@ -125,6 +125,11 @@ namespace kra
             exported_layer = layer->get_exported_layer();
 
             exported_layers.push_back(std::move(exported_layer));
+
+            std::vector<std::unique_ptr<ExportedLayer>> exported_frames = layer->get_exported_frames();
+            for (auto &frame : exported_frames) {
+                exported_layers.push_back(std::move(frame));
+            }
         }
 
         /* Reverse the direction of the vector as to preserve draw order */
