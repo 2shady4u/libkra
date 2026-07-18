@@ -11,7 +11,7 @@ namespace kra
     // ---------------------------------------------------------------------------------------------------------------------
     // Load a KRA/KRZ archive from file and import document properties and layers
     // ---------------------------------------------------------------------------------------------------------------------
-    void Document::load(const std::wstring &p_path)
+    int Document::load(const std::wstring &p_path)
     {
         /* Convert wstring to string */
         std::string string_path = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(p_path);
@@ -22,7 +22,7 @@ namespace kra
         if (file == NULL)
         {
             fprintf(stderr, "ERROR: Failed to open KRA/KRZ archive at path '%s'\n", char_path);
-            return;
+            return 1;
         }
 
         /* A 'maindoc.xml' file should always be present in the KRA/KRZ archive, if not return immediately */
@@ -37,7 +37,7 @@ namespace kra
         else
         {
             fprintf(stderr, "ERROR: Required file 'maindoc.xml' is missing in archive ('%s')\n", char_path);
-            return;
+            return 1;
         }
 
         std::vector<unsigned char> result_vector;
@@ -69,6 +69,7 @@ namespace kra
 
         /* Close the KRA/KRZ archive */
         errorCode = unzClose(file);
+        return 0;
     }
 
     // ---------------------------------------------------------------------------------------------------------------------

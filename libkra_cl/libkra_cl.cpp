@@ -144,10 +144,10 @@ void process_layer(const std::unique_ptr<kra::Document> &document, const std::un
 int export_document(std::wstring p_file_name)
 {
 	std::unique_ptr<kra::Document> document = std::make_unique<kra::Document>();
-	document->load(p_file_name);
-	if (document == NULL)
+	const int result = document->load(p_file_name);
+	if (result != 0)
 	{
-		return 1;
+		return result;
 	}
 
 	switch (document->color_space)

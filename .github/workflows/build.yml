@@ -41,14 +41,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -85,7 +85,38 @@ jobs:
           scons platform=${{matrix.platform}} target=${{env.TARGET}} target_path=${{env.TARGET_PATH}} target_name=${{env.TARGET_NAME}}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{env.PROJECT_FOLDER}}/${{env.TARGET_PATH}}
+
+  test:
+    name: Test
+    needs: [build]
+    runs-on: "windows-latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+          submodules: recursive
+
+      - name: Download Artifacts
+        id: download
+        uses: actions/download-artifact@v7
+        with:
+          name: win64_mingw
+          path: artifacts
+
+      - name: Copy executables to build/-folder
+        run: |
+          ls ${{steps.download.outputs.download-path}}/
+          cd ${{ env.PROJECT_FOLDER }}
+          cp -r ${{steps.download.outputs.download-path}}/* build/
+          ls build/
+
+      - name: Execute CLI
+        run: |
+          cd build/
+          .\libkra_cl.exe

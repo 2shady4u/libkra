@@ -42,7 +42,7 @@ namespace kra
 
 		std::unordered_map<std::string, const std::unique_ptr<Layer> &> layer_map;
 
-		void load(const std::wstring &p_path);
+		int load(const std::wstring &p_path);
 
 		std::unique_ptr<ExportedLayer> get_exported_layer_at(int p_layer_index) const;
 		std::unique_ptr<ExportedLayer> get_exported_layer_with_uuid(const std::string &p_uuid) const;
