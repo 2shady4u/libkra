@@ -139,7 +139,8 @@ namespace kra
     void Layer::_import_group_attributes(const std::string &p_name, unzFile &p_file, const tinyxml2::XMLElement *p_xml_element)
     {
         const tinyxml2::XMLElement *layers_element = p_xml_element->FirstChildElement("layers");
-        const tinyxml2::XMLElement *layer_node = layers_element->FirstChild()->ToElement();
+        const tinyxml2::XMLNode *first_child = layers_element->FirstChild();
+        const tinyxml2::XMLElement *layer_node = (first_child != 0) ? first_child->ToElement() : 0;
 
         while (layer_node != 0)
         {
