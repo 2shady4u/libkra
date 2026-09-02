@@ -267,6 +267,31 @@ namespace kra
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
+    // Read one pixel of a layer's color space as RGBA8
+    // ---------------------------------------------------------------------------------------------------------------------
+    static void _read_pixel_as_rgba8(const uint8_t *p_src, ColorSpace p_color_space, uint8_t *p_dst)
+    {
+        if (p_color_space == RGBA16)
+        {
+            /* Krita writes tile data straight out of the paint device without any byte swapping, */
+            /* so a 16 bit channel is stored in host order, i.e. little endian in practice. */
+            /* See KisTileCompressor2::compressTileData(). An 8 bit value b maps to b * 257, so */
+            /* dividing by 257 with rounding is the exact inverse. */
+            for (unsigned int i = 0; i < 4; i++)
+            {
+                const unsigned int value = (unsigned int)p_src[i * 2] | ((unsigned int)p_src[i * 2 + 1] << 8);
+                p_dst[i] = (uint8_t)((value + 128) / 257);
+            }
+            return;
+        }
+
+        p_dst[0] = p_src[0];
+        p_dst[1] = p_src[1];
+        p_dst[2] = p_src[2];
+        p_dst[3] = p_src[3];
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
     // Blend a single source pixel, scaled by the layer opacity, over a destination pixel (src-over)
     // ---------------------------------------------------------------------------------------------------------------------
     static void _blend_over(const uint8_t *p_src, uint8_t p_opacity, uint8_t *p_dst)
@@ -330,11 +355,13 @@ namespace kra
             return;
         }
 
-        /* The buffer we compose into is 8 bits per channel, so anything wider would have to be */
-        /* converted down first. Refuse rather than reinterpret the bytes as RGBA8 and emit noise. */
-        if (color_space != RGBA || layer_data->pixel_size != 4)
+        /* The buffer we compose into is RGBA8, so a wider layer is narrowed one pixel at a time */
+        /* as it is blended, which avoids building a second full size copy of the layer. */
+        /* The float and CMYK spaces need a different conversion and are not handled yet. */
+        const unsigned int bytes_per_pixel = (color_space == RGBA16) ? 8 : 4;
+        if ((color_space != RGBA && color_space != RGBA16) || layer_data->pixel_size != bytes_per_pixel)
         {
-            fprintf(stderr, "ERROR: Layer '%s' cannot be composed, only the RGBA color space is supported.\n", name.c_str());
+            fprintf(stderr, "ERROR: Layer '%s' cannot be composed, only the RGBA and RGBA16 color spaces are supported.\n", name.c_str());
             return;
         }
 
@@ -350,7 +377,13 @@ namespace kra
         /* region takes the default pixel, which is why a solid background layer can store no tiles */
         /* at all. A fully transparent default pixel, which is also what an archive without a */
         /* .defaultpixel entry yields, cannot contribute and lets us skip the untiled region. */
-        const bool default_pixel_contributes = default_pixel.size() >= 4 && default_pixel[3] != 0;
+        bool default_pixel_contributes = false;
+        if (default_pixel.size() >= bytes_per_pixel)
+        {
+            uint8_t default_rgba8[4];
+            _read_pixel_as_rgba8(default_pixel.data(), color_space, default_rgba8);
+            default_pixel_contributes = default_rgba8[3] != 0;
+        }
 
         if (default_pixel_contributes)
         {
@@ -368,10 +401,12 @@ namespace kra
                         lx >= 0 && lx < (int64_t)layer_width &&
                         ly >= 0 && ly < (int64_t)layer_height)
                     {
-                        src = &layer_pixels[((size_t)ly * layer_width + (size_t)lx) * 4];
+                        src = &layer_pixels[((size_t)ly * layer_width + (size_t)lx) * bytes_per_pixel];
                     }
 
-                    _blend_over(src, opacity, &p_rgba_inout[((size_t)dy * p_document_width + dx) * 4]);
+                    uint8_t src_rgba8[4];
+                    _read_pixel_as_rgba8(src, color_space, src_rgba8);
+                    _blend_over(src_rgba8, opacity, &p_rgba_inout[((size_t)dy * p_document_width + dx) * 4]);
                 }
             }
             return;
@@ -395,7 +430,9 @@ namespace kra
                     continue;
                 }
 
-                _blend_over(&layer_pixels[((size_t)ly * layer_width + lx) * 4],
+                uint8_t src_rgba8[4];
+                _read_pixel_as_rgba8(&layer_pixels[((size_t)ly * layer_width + lx) * bytes_per_pixel], color_space, src_rgba8);
+                _blend_over(src_rgba8,
                             opacity,
                             &p_rgba_inout[((size_t)doc_y * p_document_width + (size_t)doc_x) * 4]);
             }

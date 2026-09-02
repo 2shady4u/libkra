@@ -199,16 +199,18 @@ int export_document(std::wstring p_file_name, const std::string &p_compose_file_
 		return result;
 	}
 
+	/* Composing always produces an RGBA8 image, and each layer carries its own color space, */
+	/* so this does not depend on the document one. Layer::compose() reports what it cannot handle. */
+	if (!p_compose_file_name.empty())
+	{
+		compose_document_to_image(document, p_compose_file_name);
+		return 0;
+	}
+
 	switch (document->color_space)
 	{
 	case kra::ColorSpace::RGBA:
 	{
-		if (!p_compose_file_name.empty())
-		{
-			compose_document_to_image(document, p_compose_file_name);
-			return 0;
-		}
-
 		std::vector<std::unique_ptr<kra::ExportedLayer>> exported_layers = document->get_all_exported_layers();
 		for (auto const &layer : exported_layers)
 		{
