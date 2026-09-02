@@ -140,12 +140,21 @@ namespace kra
         for (auto const &tile : tiles)
         {
             std::vector<uint8_t> unsorted_data(decompressed_length);
-            /* Now... the first byte of the data is actually some sort of indicator of compression */
-            /* As follows: */
+            /* The first byte of the data indicates how the rest of it is stored: */
             /* 0 -> No compression, the data is actually raw! */
             /* 1 -> The data was compressed using LZF */
-            // NOTE: At the time of writing this byte cannot be changed from its default value (1) and thus the data will ALWAYS be compressed.
-            _lzff_decompress(tile->compressed_data.data() + 1, tile->compressed_length, unsorted_data.data(), decompressed_length);
+            /* Krita falls back to storing a tile raw whenever LZF does not actually make it */
+            /* smaller, so both cases really do occur. See KisTileCompressor2::compressTileData(). */
+            const uint8_t *tile_bytes = tile->compressed_data.data() + 1;
+            const int tile_byte_count = tile->compressed_length - 1;
+            if (tile->compressed_data[0] == 1)
+            {
+                _lzff_decompress(tile_bytes, tile_byte_count, unsorted_data.data(), decompressed_length);
+            }
+            else
+            {
+                std::memcpy(unsorted_data.data(), tile_bytes, tile_byte_count);
+            }
 
             // TODO: Conversion between color profiles could potentially be done here?
 
