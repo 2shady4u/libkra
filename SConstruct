@@ -233,7 +233,7 @@ elif env['platform'] == 'osx':
     ])
 
     if env['target'] == 'debug':
-        env.Append(CCFLAGS=['-Og', 'g'])
+        env.Append(CCFLAGS=['-Og', '-g'])
     elif env['target'] == 'release':
         env.Append(CCFLAGS=['-O3'])
 
@@ -242,6 +242,8 @@ elif env['platform'] == 'windows':
     if host_platform == 'windows' and not env['use_mingw']:
         # MSVC
         env.Append(LINKFLAGS=['/WX'])
+        env.Append(CCFLAGS=['/std:c++17'])
+
         if env['target'] == 'debug':
             env.Append(CCFLAGS=['/Z7', '/Od', '/EHsc', '/D_DEBUG', '/MDd'])
         elif env['target'] == 'release':
