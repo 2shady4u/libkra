@@ -112,6 +112,14 @@ void save_layer_to_image(const std::unique_ptr<kra::ExportedLayer> &layer)
 	unsigned int layer_height = (unsigned int)(layer->bottom - layer->top);
 	const std::string file_name = layer->name + ".png";
 
+	if (layer->data.empty()) {
+		/* Ideally, we should fully populate the layer with the default pixel */
+		/* For now, let's just avoid this situation */
+		std::fprintf(stdout, "WARNING: Skipping empty layer with name '%s'.\n", layer->name.c_str());
+		return;
+	}
+
+
 	/* Export the layer's data to a texture */
 	write_data_to_png(file_name.c_str(), layer_width, layer_height, layer->data.data());
 }

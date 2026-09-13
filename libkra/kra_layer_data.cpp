@@ -124,7 +124,17 @@ namespace kra
         const unsigned int row_length = number_of_columns * pixel_size * tile_width;
 
         const size_t composed_length = number_of_columns * number_of_rows * decompressed_length;
+        const size_t pixel_count = number_of_columns * number_of_rows * tile_width * tile_height;
         std::vector<uint8_t> composed_data(composed_length);
+
+        /* Skip if the default_pixel only contains zeroes */
+        if (std::any_of(default_pixel.begin(), default_pixel.end(), [](unsigned char x) { return x != 0; })) {
+            /* Populate the composed_data vector with the default_pixel */
+            for (size_t i = 0; i < pixel_count; ++i)
+            {
+                std::memcpy(&composed_data[i * pixel_size], default_pixel.data(), pixel_size);
+            }
+        }
 
         /* Go through all the tiles and decompress their data */
         for (auto const &tile : tiles)
