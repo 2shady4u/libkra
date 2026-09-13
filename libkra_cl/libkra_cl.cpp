@@ -12,94 +12,95 @@
 #include "../libpng/png.h"
 
 #include <iostream>
+#include <fstream>
+
+// Custom write callback for libpng to be able to work with std::ofstream
+static void user_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+	std::ofstream* stream = static_cast<std::ofstream*>(png_get_io_ptr(png_ptr));
+	stream->write(reinterpret_cast<char*>(data), length);
+}
+
+// Custom flush callback for libpng to be able to work with std::ofstream
+static void user_flush_data(png_structp png_ptr)
+{
+	std::ofstream* stream = static_cast<std::ofstream*>(png_get_io_ptr(png_ptr));
+	stream->flush();
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Export and save as a *.png-file with the help of the libpng-library.
 // ---------------------------------------------------------------------------------------------------------------------
 bool write_data_to_png(const char *filename, unsigned int width, unsigned int height, const uint8_t *data)
 {
-	bool success = true;
-	FILE *fp = NULL;
-	png_structp png_ptr = NULL;
-	png_infop info_ptr = NULL;
-	png_bytep row = NULL;
-
-	unsigned int channelCount = 4;
-	int colorType = PNG_COLOR_TYPE_RGBA;
-
 	// Open file for writing (binary mode)
-	fp = fopen(filename, "wb");
-	if (fp == NULL)
+	std::ofstream file(filename, std::ios::binary);
+	if (!file.is_open())
 	{
 		std::cout << "Could not open file " << filename << " for writing" << std::endl;
-		success = false;
-		goto finalise;
+		return false;
 	}
 
 	// Initialize write structure
-	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (png_ptr == NULL)
+	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png_ptr)
 	{
 		std::cout << "Could not allocate write struct" << std::endl;
-		success = false;
-		goto finalise;
+		return false;
 	}
 
 	// Initialize info structure
-	info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL)
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr)
 	{
 		std::cout << "Could not allocate info struct" << std::endl;
-		success = false;
-		goto finalise;
+		png_destroy_write_struct(&png_ptr, NULL);
+		return false;
 	}
+
+	// RAII guard guarantees cleanup of png objects on any exit path
+	struct PngCleanup {
+		png_structp& ptr;
+		png_infop& info;
+		~PngCleanup() {
+			if (ptr) {
+				png_destroy_write_struct(&ptr, info ? &info : NULL);
+			}
+		}
+	} png_guard{png_ptr, info_ptr};
 
 	// Setup Exception handling
 	if (setjmp(png_jmpbuf(png_ptr)))
 	{
 		std::cout << "Error during png creation" << std::endl;
-		success = false;
-		goto finalise;
+		return false;
 	}
 
-	png_init_io(png_ptr, fp);
+	png_set_write_fn(png_ptr, &file, user_write_data, user_flush_data);
+
+	const unsigned int channelCount = 4;
+    const int colorType = PNG_COLOR_TYPE_RGBA;
+	const int bitDepth = 8;
 
 	/* Write header depending on the channel type, always in 8 bit colour depth. */
 	png_set_IHDR(png_ptr, info_ptr, width, height,
-				 8, colorType, PNG_INTERLACE_NONE,
+				 bitDepth, colorType, PNG_INTERLACE_NONE,
 				 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
 	png_write_info(png_ptr, info_ptr);
 
-	/* Allocate memory for one row */
-	row = (png_bytep)malloc(channelCount * width * sizeof(png_byte));
-
 	/* Write image data, one row at a time. */
-	unsigned int x, y;
-	for (y = 0; y < height; y++)
+	size_t row_stride = static_cast<size_t>(width) * channelCount;
+	for (unsigned int y = 0; y < height; y++)
 	{
-		for (x = 0; x < width; x++)
-		{
-			memcpy(row, &data[channelCount * width * y], channelCount * width * sizeof(png_byte));
-		}
-		png_write_row(png_ptr, row);
+		png_const_bytep row_ptr = (png_bytep)(data + (y * row_stride));
+		png_write_row(png_ptr, const_cast<png_bytep>(row_ptr));
 	}
 
 	/* End the png_ptrwrite operation */
 	png_write_end(png_ptr, NULL);
 
-/* Clear up the memory from the heap */
-finalise:
-	if (fp != NULL)
-		fclose(fp);
-	if (info_ptr != NULL)
-		png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
-	if (png_ptr != NULL)
-		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-	if (row != NULL)
-		std::free(row);
-
-	return success;
+	return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -122,14 +123,14 @@ void save_layer_to_svg(const std::unique_ptr<kra::ExportedLayer> &layer)
 {
 	const std::string file_name = layer->name + ".svg";
 
-	std::FILE *file = std::fopen(file_name.c_str(), "wb");
-	if (file == NULL)
-	{
+	std::ofstream file(file_name, std::ios::binary);
+	if (!file.is_open())
+    {
 		std::fprintf(stderr, "ERROR: Could not open '%s' for writing.\n", file_name.c_str());
 		return;
 	}
-	std::fwrite(layer->svg_content.data(), 1, layer->svg_content.size(), file);
-	std::fclose(file);
+
+	file.write(reinterpret_cast<const char*>(layer->svg_content.data()), layer->svg_content.size());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
