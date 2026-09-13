@@ -4,3 +4,6 @@
 [submodule "libpng"]
 	path = libpng
 	url = https://github.com/glennrp/libpng.git
+[submodule "lunasvg"]
+	path = lunasvg
+	url = https://github.com/sammycage/lunasvg.git

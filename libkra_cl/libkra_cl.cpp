@@ -168,15 +168,43 @@ void process_layer(const std::unique_ptr<kra::Document> &document, const std::un
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Blend every layer of the document into one image and write it to a single PNG
+// ---------------------------------------------------------------------------------------------------------------------
+void compose_document_to_image(const std::unique_ptr<kra::Document> &document, const std::string &p_file_name)
+{
+	const unsigned int width = document->width;
+	const unsigned int height = document->height;
+
+	/* Start from a fully transparent document and blend the layers over it. */
+	std::vector<uint8_t> composed((size_t)width * height * 4, 0);
+
+	/* Krita stores layers top-first, so walk them in reverse to blend bottom-up. */
+	for (auto layer = document->layers.rbegin(); layer != document->layers.rend(); ++layer)
+	{
+		(*layer)->compose(width, height, document->x_res, composed.data());
+	}
+
+	write_data_to_png(p_file_name.c_str(), width, height, composed.data());
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Export the document as found at the given path
 // ---------------------------------------------------------------------------------------------------------------------
-int export_document(std::wstring p_file_name)
+int export_document(std::wstring p_file_name, const std::string &p_compose_file_name)
 {
 	std::unique_ptr<kra::Document> document = std::make_unique<kra::Document>();
 	const int result = document->load(p_file_name);
 	if (result != 0)
 	{
 		return result;
+	}
+
+	/* Composing always produces an RGBA8 image, and each layer carries its own color space, */
+	/* so this does not depend on the document one. Layer::compose() reports what it cannot handle. */
+	if (!p_compose_file_name.empty())
+	{
+		compose_document_to_image(document, p_compose_file_name);
+		return 0;
 	}
 
 	switch (document->color_space)
@@ -209,7 +237,9 @@ static void show_usage(std::string name)
 			  << "  -h, --help                       Display this help message.\n"
 			  << "  -s, --source <source>            Specify the KRA source file.\n"
 			  << "  -q, --quiet                      Do not print anything in the console.\n"
-			  << "  -v, --verbose                    Print additional logs in the console.\n";
+			  << "  -v, --verbose                    Print additional logs in the console.\n"
+			  << "  -c, --compose <destination>       Blend all layers into a single PNG instead of\n"
+			  << "                                   exporting each layer separately.\n";
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -217,6 +247,7 @@ static void show_usage(std::string name)
 int main(int argc, const char *argv[])
 {
 	std::vector<std::string> sources;
+	std::string compose_file_name;
 	// NOTE: Maybe we shouldn't hardcode this? This is here mainly for debugging purposes.
 	std::wstring file_name = L"..\\examples\\example_RGBA.kra";
 
@@ -242,6 +273,19 @@ int main(int argc, const char *argv[])
 				return 1;
 			}
 		}
+		else if ((arg == "-c") || (arg == "--compose"))
+		{
+			if (i + 1 < argc)
+			{
+				compose_file_name = argv[i + 1];
+				i++;
+			}
+			else
+			{
+				std::cerr << "--compose option requires one argument." << std::endl;
+				return 1;
+			}
+		}
 		else if ((arg == "-q") || (arg == "--quiet"))
 		{
 			kra::verbosity_level = kra::QUIET;
@@ -256,7 +300,7 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	const int result = export_document(file_name);
+	const int result = export_document(file_name, compose_file_name);
 	if (result != 0)
 	{
 		return result;
