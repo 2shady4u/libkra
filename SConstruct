@@ -289,10 +289,26 @@ elif env['platform'] == 'windows':
 
 env.Append(CPPPATH=['.', 'zlib/'])
 env.Append(CPPPATH=['src/'])
+
+# lunasvg rasterizes the SVG content of vector layers, and bundles plutovg as its backend.
+env.Append(CPPPATH=[
+    'lunasvg/include/',
+    'lunasvg/source/',
+    'lunasvg/plutovg/include/',
+    'lunasvg/plutovg/source/'
+])
+# Both are compiled straight into the binary rather than linked as shared libraries.
+env.Append(CPPDEFINES=['LUNASVG_BUILD_STATIC', 'PLUTOVG_BUILD_STATIC'])
+# A vector layer's SVG comes from whatever KRA file was opened, so don't let it reach
+# outside the archive: this makes <image href="..."> ignore anything but data: URIs.
+env.Append(CPPDEFINES=['LUNASVG_DISABLE_EXTERNAL_RESOURCES'])
+
 sources = [
     Glob('libpng/*.c',exclude=['libpng/pngtest.c']),
     Glob('libkra_cl/*.cpp'), 
     Glob('libkra/*.cpp'),
+    Glob('lunasvg/source/*.cpp'),
+    Glob('lunasvg/plutovg/source/*.c'),
     'tinyxml2/tinyxml2.cpp',
     Glob('zlib/*.c'),
     Glob('zlib/contrib/minizip/unzip.c'),

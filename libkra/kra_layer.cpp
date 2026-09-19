@@ -6,6 +6,8 @@
 
 #include "kra_layer.h"
 
+#include <lunasvg.h>
+
 namespace kra
 {
     // ---------------------------------------------------------------------------------------------------------------------
@@ -261,6 +263,240 @@ namespace kra
         if (!svg_content.empty())
         {
             fprintf(stdout, "   >> SVG data loaded successfully\n");
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Read one pixel of a layer's color space as RGBA8
+    // ---------------------------------------------------------------------------------------------------------------------
+    static void _read_pixel_as_rgba8(const uint8_t *p_src, ColorSpace p_color_space, uint8_t *p_dst)
+    {
+        if (p_color_space == RGBA16)
+        {
+            /* Krita writes tile data straight out of the paint device without any byte swapping, */
+            /* so a 16 bit channel is stored in host order, i.e. little endian in practice. */
+            /* See KisTileCompressor2::compressTileData(). An 8 bit value b maps to b * 257, so */
+            /* dividing by 257 with rounding is the exact inverse. */
+            for (unsigned int i = 0; i < 4; i++)
+            {
+                const unsigned int value = (unsigned int)p_src[i * 2] | ((unsigned int)p_src[i * 2 + 1] << 8);
+                p_dst[i] = (uint8_t)((value + 128) / 257);
+            }
+            return;
+        }
+
+        p_dst[0] = p_src[0];
+        p_dst[1] = p_src[1];
+        p_dst[2] = p_src[2];
+        p_dst[3] = p_src[3];
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Blend a single source pixel, scaled by the layer opacity, over a destination pixel (src-over)
+    // ---------------------------------------------------------------------------------------------------------------------
+    static void _blend_over(const uint8_t *p_src, uint8_t p_opacity, uint8_t *p_dst)
+    {
+        const float src_alpha = (p_src[3] * p_opacity / 255) / 255.0f;
+        if (src_alpha <= 0.0f)
+        {
+            /* A fully transparent source cannot change the destination. */
+            return;
+        }
+
+        const float dst_alpha = p_dst[3] / 255.0f;
+        const float out_alpha = src_alpha + dst_alpha * (1.0f - src_alpha);
+        if (out_alpha <= 0.0f)
+        {
+            return;
+        }
+
+        for (unsigned int i = 0; i < 3; i++)
+        {
+            p_dst[i] = (uint8_t)((p_src[i] * src_alpha + p_dst[i] * dst_alpha * (1.0f - src_alpha)) / out_alpha + 0.5f);
+        }
+        p_dst[3] = (uint8_t)(out_alpha * 255.0f + 0.5f);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Blend this layer over an RGBA8 buffer holding the whole document
+    // ---------------------------------------------------------------------------------------------------------------------
+    void Layer::compose(unsigned int p_document_width, unsigned int p_document_height, double p_document_dpi, uint8_t *p_rgba_inout) const
+    {
+        if (!visible || opacity == 0)
+        {
+            return;
+        }
+
+        switch (type)
+        {
+        case PAINT_LAYER:
+            _compose_paint_layer(p_document_width, p_document_height, p_rgba_inout);
+            break;
+        case VECTOR_LAYER:
+            _compose_vector_layer(p_document_width, p_document_height, p_document_dpi, p_rgba_inout);
+            break;
+        case GROUP_LAYER:
+            /* Krita stores layers top-first, so walk the children in reverse to blend bottom-up. */
+            for (auto child = children.rbegin(); child != children.rend(); ++child)
+            {
+                (*child)->compose(p_document_width, p_document_height, p_document_dpi, p_rgba_inout);
+            }
+            break;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Blend the tile data, and the default pixel covering everything outside of it, over the document
+    // ---------------------------------------------------------------------------------------------------------------------
+    void Layer::_compose_paint_layer(unsigned int p_document_width, unsigned int p_document_height, uint8_t *p_rgba_inout) const
+    {
+        if (!layer_data)
+        {
+            return;
+        }
+
+        /* The buffer we compose into is RGBA8, so a wider layer is narrowed one pixel at a time */
+        /* as it is blended, which avoids building a second full size copy of the layer. */
+        /* The float and CMYK spaces need a different conversion and are not handled yet. */
+        const unsigned int bytes_per_pixel = (color_space == RGBA16) ? 8 : 4;
+        if ((color_space != RGBA && color_space != RGBA16) || layer_data->pixel_size != bytes_per_pixel)
+        {
+            fprintf(stderr, "ERROR: Layer '%s' cannot be composed, only the RGBA and RGBA16 color spaces are supported.\n", name.c_str());
+            return;
+        }
+
+        const std::vector<uint8_t> layer_pixels = layer_data->get_composed_data(color_space);
+        const std::vector<uint8_t> default_pixel = layer_data->get_composed_default_pixel(color_space);
+
+        const int32_t layer_left = layer_data->get_left();
+        const int32_t layer_top = layer_data->get_top();
+        const unsigned int layer_width = layer_data->get_width();
+        const unsigned int layer_height = layer_data->get_height();
+
+        /* The tiles only cover the region the layer actually painted; every pixel outside of that */
+        /* region takes the default pixel, which is why a solid background layer can store no tiles */
+        /* at all. A fully transparent default pixel, which is also what an archive without a */
+        /* .defaultpixel entry yields, cannot contribute and lets us skip the untiled region. */
+        bool default_pixel_contributes = false;
+        if (default_pixel.size() >= bytes_per_pixel)
+        {
+            uint8_t default_rgba8[4];
+            _read_pixel_as_rgba8(default_pixel.data(), color_space, default_rgba8);
+            default_pixel_contributes = default_rgba8[3] != 0;
+        }
+
+        if (default_pixel_contributes)
+        {
+            for (unsigned int dy = 0; dy < p_document_height; dy++)
+            {
+                for (unsigned int dx = 0; dx < p_document_width; dx++)
+                {
+                    /* Inside the tiles the stored pixel replaces the default pixel, it does not */
+                    /* sit on top of it, so pick exactly one source per document pixel. */
+                    const int64_t lx = (int64_t)dx - (int64_t)x - layer_left;
+                    const int64_t ly = (int64_t)dy - (int64_t)y - layer_top;
+
+                    const uint8_t *src = default_pixel.data();
+                    if (!layer_pixels.empty() &&
+                        lx >= 0 && lx < (int64_t)layer_width &&
+                        ly >= 0 && ly < (int64_t)layer_height)
+                    {
+                        src = &layer_pixels[((size_t)ly * layer_width + (size_t)lx) * bytes_per_pixel];
+                    }
+
+                    uint8_t src_rgba8[4];
+                    _read_pixel_as_rgba8(src, color_space, src_rgba8);
+                    _blend_over(src_rgba8, opacity, &p_rgba_inout[((size_t)dy * p_document_width + dx) * 4]);
+                }
+            }
+            return;
+        }
+
+        if (layer_pixels.empty())
+        {
+            return;
+        }
+
+        for (unsigned int ly = 0; ly < layer_height; ly++)
+        {
+            for (unsigned int lx = 0; lx < layer_width; lx++)
+            {
+                const int64_t doc_x = (int64_t)x + layer_left + lx;
+                const int64_t doc_y = (int64_t)y + layer_top + ly;
+
+                if (doc_x < 0 || doc_x >= (int64_t)p_document_width ||
+                    doc_y < 0 || doc_y >= (int64_t)p_document_height)
+                {
+                    continue;
+                }
+
+                uint8_t src_rgba8[4];
+                _read_pixel_as_rgba8(&layer_pixels[((size_t)ly * layer_width + lx) * bytes_per_pixel], color_space, src_rgba8);
+                _blend_over(src_rgba8,
+                            opacity,
+                            &p_rgba_inout[((size_t)doc_y * p_document_width + (size_t)doc_x) * 4]);
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Rasterize the layer's SVG content with lunasvg and blend the result over the document
+    // ---------------------------------------------------------------------------------------------------------------------
+    void Layer::_compose_vector_layer(unsigned int p_document_width, unsigned int p_document_height, double p_document_dpi, uint8_t *p_rgba_inout) const
+    {
+        if (svg_content.empty())
+        {
+            return;
+        }
+
+        std::unique_ptr<lunasvg::Document> svg_document = lunasvg::Document::loadFromData((const char *)svg_content.data(), svg_content.size());
+        if (!svg_document)
+        {
+            fprintf(stderr, "ERROR: Vector layer '%s' contains SVG content that could not be parsed.\n", name.c_str());
+            return;
+        }
+
+        /* SVG lengths are authored against SVG's own 96 DPI, so a document saved at a different */
+        /* resolution has to be scaled or the shapes come out at the wrong size. */
+        const double scale = p_document_dpi / 96.0;
+        const int svg_width = (int)(svg_document->width() * scale);
+        const int svg_height = (int)(svg_document->height() * scale);
+        if (svg_width <= 0 || svg_height <= 0)
+        {
+            fprintf(stderr, "ERROR: Vector layer '%s' has no rasterizable size at %g DPI.\n", name.c_str(), p_document_dpi);
+            return;
+        }
+
+        lunasvg::Bitmap bitmap = svg_document->renderToBitmap(svg_width, svg_height);
+        if (bitmap.isNull())
+        {
+            fprintf(stderr, "ERROR: Vector layer '%s' could not be rasterized.\n", name.c_str());
+            return;
+        }
+
+        /* lunasvg renders to ARGB32 premultiplied; this converts in place to the plain RGBA we blend. */
+        bitmap.convertToRGBA();
+
+        const uint8_t *svg_data = bitmap.data();
+        const int stride = bitmap.stride();
+
+        for (int sy = 0; sy < bitmap.height(); sy++)
+        {
+            for (int sx = 0; sx < bitmap.width(); sx++)
+            {
+                const int64_t doc_x = (int64_t)x + sx;
+                const int64_t doc_y = (int64_t)y + sy;
+
+                if (doc_x < 0 || doc_x >= (int64_t)p_document_width ||
+                    doc_y < 0 || doc_y >= (int64_t)p_document_height)
+                {
+                    continue;
+                }
+
+                _blend_over(&svg_data[(size_t)sy * stride + (size_t)sx * 4],
+                            opacity,
+                            &p_rgba_inout[((size_t)doc_y * p_document_width + (size_t)doc_x) * 4]);
+            }
         }
     }
 };
