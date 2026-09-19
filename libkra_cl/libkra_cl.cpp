@@ -218,7 +218,7 @@ int main(int argc, const char *argv[])
 {
 	std::vector<std::string> sources;
 	// NOTE: Maybe we shouldn't hardcode this? This is here mainly for debugging purposes.
-	std::wstring file_name = L"..\\examples\\example_RGBA.kra";
+	std::wstring file_name = L"../examples/example_RGBA.kra";
 
 	for (int i = 1; i < argc; ++i)
 	{
